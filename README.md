@@ -69,12 +69,14 @@ NOTES FROM THE AUTHORS:
         done can be found here: 
         http://www.darkztar.com/forum/showthread.php?219034-Ripping-videos-amp-subtitles-from-Crunchyroll-%28noob-friendly%29
 What new:
-    - new way for login that dont need cfscrape
-    - add progressbar to download
-    - add color for console
-    - use new  way to get video url which include Hardsub video and 240p
-    - new way to get usa sesson_id
-What To-DO:
+- new way for login that dont need cfscrape
+- add progressbar to download
+- add color for console
+- use new  way to get video url which include Hardsub video and 240p
+- new way to get usa sesson_id
+
+What new:
+
     - clean the code from unused lines and codes
     - update the code to use new proxy function
     - remove the old function to download subtitle and use new code
