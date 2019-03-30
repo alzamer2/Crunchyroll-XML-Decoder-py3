@@ -1,0 +1,10 @@
+backports
+requests
+colorama
+lxml
+cryptography==2.4.2
+cfscrape
+m3u8
+beautifulsoup4
+backports.shutil_get_terminal_size
+unidecode
