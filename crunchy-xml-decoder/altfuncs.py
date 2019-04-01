@@ -36,6 +36,7 @@ def gethtml(url, req='', headers=''):
     cookies_ = ConfigParser()
     cookies_.read('cookies')
     session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id')
+    session.cookies['session_id'] = cookies_.get('COOKIES', 'sess_id')
     lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
     if forceusa:
         session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id_usa')
