@@ -99,17 +99,11 @@ Booting up...
     #print(media_info['media_metadata']['series_title'])
     #print(media_info['media_metadata']['episode_number'])
     #print(media_info['media_metadata']['episode_title'])
-    title: str = '%s Episode %s - %s' % (media_info['media_metadata']['series_title'],media_info['media_metadata']['episode_number'], media_info['media_metadata']['episode_title'])
+    title = clean_text('%s Episode %s - %s' % (media_info['media_metadata']['series_title'],media_info['media_metadata']['episode_number'], media_info['media_metadata']['episode_title']))
     #title: str = re.findall(r'var mediaMetadata = \{.*?name":"(.+?)",".+?\};',html_page_)[0]
     if len(os.path.join('export', title + '.flv')) > 255 or media_info['media_metadata']['episode_title'] is '':
-        title: str = '%s Episode %s' % (media_info['media_metadata']['series_title'], media_info['media_metadata']['episode_number'])
+        title = clean_text('%s Episode %s' % (media_info['media_metadata']['series_title'], media_info['media_metadata']['episode_number']))
 
-    ### Taken from http://stackoverflow.com/questions/6116978/python-replace-multiple-strings and improved to include the backslash###
-    rep = {' / ': ' - ', '/': ' - ', ':': '-', '?': '.', '"': "''", '|': '-', '&quot;': "''", 'a*G': 'a G', '*': '#',
-           r'\u2026': '...', r' \ ': ' - '}
-    rep = dict((re.escape(k), v) for k, v in rep.items())
-    pattern = re.compile("|".join(rep.keys()))
-    title = unidecode(pattern.sub(lambda m: rep[re.escape(m.group(0))], title))
     Loc_lang = {u'Español (Espana)': 'esES', u'Français (France)': 'frFR', u'Português (Brasil)': 'ptBR',
             u'English': 'enUS', u'Español': 'esLA', u'Türkçe': 'trTR', u'Italiano': 'itIT',
             u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский' : 'ruRU'}
@@ -171,11 +165,31 @@ Booting up...
     #print(vquality,hls_url)
     print(format('Now Downloading - ' + title))
     #video_input = os.path.join("export", title + '.ts')
-    video_input = dircheck([os.path.abspath('export') + '\\', media_info['media_metadata']['series_title'], ' Episode',
-                          ' - ' + media_info['media_metadata']['episode_number'],
-                          ' - ' + media_info['media_metadata']['episode_title'],'.ts'],
+    video_input = dircheck([os.path.abspath('export') + '\\', clean_text(media_info['media_metadata']['series_title']), ' Episode',
+                          ' - ' + clean_text(media_info['media_metadata']['episode_number']),
+                          ' - ' + clean_text(media_info['media_metadata']['episode_title']),'.ts'],
                          ['True', 'True', 'False', 'True', 1, 'True',], 240)
-    video_hls(hls_url, video_input, connection_n_)
+    if not 'idlelib.run' in sys.modules:
+        video_hls(hls_url, video_input, connection_n_)
+    else:
+        if os.path.exists(os.path.abspath(os.path.join(".","crunchy-xml-decoder", "hls.py"))):
+            hls_s_path =os.path.abspath(os.path.join(".","crunchy-xml-decoder"))
+        elif os.path.exists(os.path.abspath(os.path.join("..","crunchy-xml-decoder", "hls.py"))):
+            hls_s_path =os.path.abspath(os.path.join("..","crunchy-xml-decoder"))
+        else:
+            print('hls script not found')
+        hls_script = '''\
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+import sys
+sys.path.append(r"'''+hls_s_path+'''")
+from hls import video_hls
+
+video_hls("'''+hls_url+'''", r"'''+video_input+'''", '''+str(connection_n_)+''')'''
+        #print(hls_script)
+        open(os.path.join(".","export","hls_script_temp.py"),"w",encoding='utf-8').write(hls_script)
+        subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe'),os.path.join(".","export","hls_script_temp.py")])
+        os.remove(os.path.join(".","export","hls_script_temp.py"))
     decode(page_url)
     mkv_merge(video_input, vquality, 'eng')
 
@@ -228,6 +242,13 @@ def mkv_merge(video_input,pixl,defult_lang):
         if file.startswith(working_name) and file.endswith(".ass"):
             os.remove(os.path.abspath(os.path.join(working_dir,file)))
     
+def clean_text(text_):
+    ### Taken from http://stackoverflow.com/questions/6116978/python-replace-multiple-strings and improved to include the backslash###
+    rep = {' / ': ' - ', '/': ' - ', ':': '-', '?': '.', '"': "''", '|': '-', '&quot;': "''", 'a*G': 'a G', '*': '#',
+           r'\u2026': '...', r' \ ': ' - '}
+    rep = dict((re.escape(k), v) for k, v in rep.items())
+    pattern = re.compile("|".join(rep.keys()))
+    return unidecode(pattern.sub(lambda m: rep[re.escape(m.group(0))], text_))
 
     
 

@@ -107,15 +107,18 @@ Booting up...
 #    sub_id3 = [word.replace('[l`rby@]','ara') for word in sub_id3]
         for i in xmlconfig['subtitle']:
             sub_file_ = dircheck([os.path.abspath('export')+'\\',
-                                  xmlconfig['media_metadata']['series_title'],' Episode',
+                                  clean_text(xmlconfig['media_metadata']['series_title']),' Episode',
                                   ' - '+xmlconfig['media_metadata']['episode_number'],
-                                  ' - '+xmlconfig['media_metadata']['episode_title'],
+                                  ' - '+clean_text(xmlconfig['media_metadata']['episode_title']),
                                   '['+lang_iso[re.findall(r'\[(.+)\]',i[1])[0]]+']',
                                   '['+re.findall(r'\[(.+)\]',i[1])[0]+']','.ass'],
                                  ['True','True','False','True',1,'True','False','True'],240)
             #print os.path.join('export', xmlconfig['media_metadata']['series_title'] + ' Episode ' + xmlconfig['media_metadata']['episode_number']+'['+lang_iso[re.findall('\[(.+)\]',i[1])[0]]+']['+re.findall('\[(.+)\]',i[1])[0]+'].ass')
             #xmlsub = altfuncs.getxml('RpcApiSubtitle_GetXml', sub_id)
-            print("Attempting to download "+re.findall(r'\[(.+)\]',i[1])[0]+" subtitle...")
+            try:
+                print("Attempting to download "+re.findall(r'\[(.+)\]',i[1])[0]+" subtitle...")
+            except:
+                print(unidecode("Attempting to download "+re.findall(r'\[(.+)\]',i[1])[0]+" subtitle..."))
             xmlsub = getxml('RpcApiSubtitle_GetXml', i[0])
             formattedsubs = CrunchyDec().returnsubs(xmlsub)
             if formattedsubs is None:
@@ -133,6 +136,13 @@ def idle_cmd_txt_fix(print_text):
     if 'idlelib.run' in sys.modules:
         print_text = re.sub(r'\\x1b.*?\[\d*\w','',print_text)
     return print_text
+def clean_text(text_):
+    ### Taken from http://stackoverflow.com/questions/6116978/python-replace-multiple-strings and improved to include the backslash###
+    rep = {' / ': ' - ', '/': ' - ', ':': '-', '?': '.', '"': "''", '|': '-', '&quot;': "''", 'a*G': 'a G', '*': '#',
+           r'\u2026': '...', r' \ ': ' - '}
+    rep = dict((re.escape(k), v) for k, v in rep.items())
+    pattern = re.compile("|".join(rep.keys()))
+    return unidecode(pattern.sub(lambda m: rep[re.escape(m.group(0))], text_))
 
 if __name__ == '__main__':
     try:

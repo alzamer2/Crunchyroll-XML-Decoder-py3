@@ -30,10 +30,10 @@ def testing_external_moudules_():
         else:
             python_bit_ = "32 bit"
     python_version_ = re.findall('\d\.\d\.?\d?',sys.version)[0]
-    printidle("python version=" + '\x1b[32m' + re.findall("[0-9]\.[0-9]\.[0-9]", sys.version).pop() + " " + python_bit_ + '\x1b[0m')
-    printidle("OS Version=" + '\x1b[32m' + platform.platform().replace("-", " ") + '\x1b[0m')
-    #printidle("System Type=" + '\x1b[32m' + os.environ['PROCESSOR_ARCHITECTURE'] + '\x1b[0m')
-    printidle("System Type=" + '\x1b[32m' + platform.machine() + '\x1b[0m')
+    print(idle_cmd_txt_fix("python version=" + '\x1b[32m' + re.findall("[0-9]\.[0-9]\.[0-9]", sys.version).pop() + " " + python_bit_ + '\x1b[0m'))
+    print(idle_cmd_txt_fix("OS Version=" + '\x1b[32m' + platform.platform().replace("-", " ") + '\x1b[0m'))
+    #print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + os.environ['PROCESSOR_ARCHITECTURE'] + '\x1b[0m'))
+    print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + platform.machine() + '\x1b[0m'))
 
 
     pip_download_ = []
@@ -41,65 +41,65 @@ def testing_external_moudules_():
     try:
         from colorama import Fore, Style, init
         init()
-        printidle('Colorama : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+        print(idle_cmd_txt_fix('Colorama : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
         pip_download_.append('Colorama')
     try:
         from lxml import etree
-        printidle('lxml : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+        print(idle_cmd_txt_fix('lxml : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        printidle('lxml : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing lxml...')
+        print(idle_cmd_txt_fix('lxml : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing lxml...'))
         pip_download_.append('lxml')
     try:
         import wget
-        printidle('wget : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+        print(idle_cmd_txt_fix('wget : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        printidle('wget : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing wget...')
+        print(idle_cmd_txt_fix('wget : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing wget...'))
         pip_download_.append('wget')
     try:
         from cryptography.hazmat.primitives.ciphers import Cipher
-        printidle('Cryptography : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+        print(idle_cmd_txt_fix('Cryptography : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        printidle('Cryptography : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing Cryptography...')
+        print(idle_cmd_txt_fix('Cryptography : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing Cryptography...'))
         pip_download_.append('cryptography==2.4.2')
     try:
         from cfscrape import create_scraper
-        printidle('Cfscrape : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+        print(idle_cmd_txt_fix('Cfscrape : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        printidle('Cfscrape : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+ ', Installing Cfscrape...')
+        print(idle_cmd_txt_fix('Cfscrape : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+ ', Installing Cfscrape...'))
         pip_download_.append('cfscrape')
     try:
         import m3u8
-        printidle('m3u8 : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+        print(idle_cmd_txt_fix('m3u8 : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        printidle('m3u8 : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing m3u8...')
+        print(idle_cmd_txt_fix('m3u8 : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing m3u8...'))
         pip_download_.append('m3u8')
     try:
         from bs4 import BeautifulSoup
-        printidle('BeautifulSoup : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+        print(idle_cmd_txt_fix('BeautifulSoup : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        printidle('BeautifulSoup : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing BeautifulSoup...')
+        print(idle_cmd_txt_fix('BeautifulSoup : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing BeautifulSoup...'))
         pip_download_.append('beautifulsoup4')
     try:
         from backports.shutil_get_terminal_size import get_terminal_size
-        printidle('backports.shutil_get_terminal_size : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+        print(idle_cmd_txt_fix('backports.shutil_get_terminal_size : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        printidle('backports.shutil_get_terminal_size : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing backports.shutil_get_terminal_size...')
+        print(idle_cmd_txt_fix('backports.shutil_get_terminal_size : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing backports.shutil_get_terminal_size...'))
         pip_download_.append('backports.shutil_get_terminal_size')
     try:
         from unidecode import unidecode
-        printidle('Unidecode : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+        print(idle_cmd_txt_fix('Unidecode : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        printidle('Unidecode : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing Unidecode...')
+        print(idle_cmd_txt_fix('Unidecode : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing Unidecode...'))
         pip_download_.append('unidecode')
     python_version_c = re.findall('(\d)\.(\d\.?\d?)',sys.version)[0]
     if int(python_version_c[0]) >= 3:
         if float(python_version_c[1]) >= 5.3:
             try:
                  from proxybroker import Broker
-                 printidle('proxybroker : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+                 print(idle_cmd_txt_fix('proxybroker : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
             except ImportError:
-                 printidle('proxybroker : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing proxybroker...')
+                 print(idle_cmd_txt_fix('proxybroker : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing proxybroker...'))
                  pip_download_.append('proxybroker')
     if not pip_download_ == []:
         '''
@@ -115,12 +115,12 @@ def testing_external_moudules_():
     elif os.path.exists("..\\crunchy-xml-decoder-py3.py"):
         bin_dir__ = "..\\video-engine"
     else:
-        printidle('\x1b[31m'+"Can't find the crunchy-xml-decoder-py3 Folder"+'\x1b[0m')
+        print(idle_cmd_txt_fix('\x1b[31m'+"Can't find the crunchy-xml-decoder-py3 Folder"+'\x1b[0m'))
     if not os.path.exists(bin_dir__):
         os.makedirs(bin_dir__)
     if not os.path.exists(bin_dir__+"\\mkvmerge.exe"):
         import wget
-        printidle('mkvmerge : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading mkvmerge...')
+        print(idle_cmd_txt_fix('mkvmerge : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading mkvmerge...'))
         wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge.zip',bin_dir__)
         unzip_(bin_dir__ + "\\mkvmerge.zip", bin_dir__)
         os.remove(bin_dir__ + "\\mkvmerge.zip")
@@ -128,7 +128,7 @@ def testing_external_moudules_():
     '''
     if not os.path.exists(bin_dir__+"\\rtmpdump.exe"):
         import wget
-        printidle('rtmpdump : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading rtmpdump...')
+        print(idle_cmd_txt_fix('rtmpdump : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading rtmpdump...'))
         wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/rtmpdump.zip',bin_dir__)
         unzip_(bin_dir__ + "\\rtmpdump.zip", bin_dir__)
         os.remove(bin_dir__ + "\\rtmpdump.zip")
@@ -137,10 +137,10 @@ def testing_external_moudules_():
 
 
 	
-def printidle(print_text, *args, **kwds):
+def idle_cmd_txt_fix(print_text):
     if 'idlelib.run' in sys.modules:
         print_text = re.sub('\\x1b.*?\[\d*\w','',print_text)
-    print(print_text, *args, **kwds)
+    return print_text
 
 def unzip_(filename_,out):
     zf = zipfile.ZipFile(filename_)
