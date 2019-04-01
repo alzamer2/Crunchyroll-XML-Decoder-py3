@@ -33,13 +33,14 @@ from ultimate import ultimate, mkv_merge
 if not os.path.exists("export"):
     os.makedirs("export")
 
+'''
 try:
     from pip._internal import main as pip_main
 except:
     import pip
     pip.main(['install', '--quiet', '-U', 'pip', 'wheel', 'setuptools'])
     from pip._internal import main as pip_main
-
+'''
 
 
 from colorama import Fore, Style, init

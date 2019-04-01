@@ -46,8 +46,8 @@ If you don't have a premium account, go and sign up for one now. It's well worth
 Booting up...
 ''')
     if page_url == '':
-        #page_url = input('Please enter Crunchyroll video URL:\n')
-        page_url = 'https://www.crunchyroll.com/the-rising-of-the-shield-hero/episode-11-catastrophe-returns-781158'
+        page_url = input('Please enter Crunchyroll video URL:\n')
+        #page_url = 'https://www.crunchyroll.com/the-rising-of-the-shield-hero/episode-11-catastrophe-returns-781158'
         #page_url = 'http://www.crunchyroll.com/military/episode-1-the-mission-begins-668503'
         #page_url = 'https://www.crunchyroll.com/mob-psycho-100/episode-11-guidance-psychic-sensor-780930'
 	

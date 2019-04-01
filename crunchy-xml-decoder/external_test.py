@@ -4,13 +4,18 @@ import sys
 import os
 import re
 import platform
+import subprocess
+import zipfile
+import math
 
+'''
 try:
     from pip._internal import main as pip_main
 except:
     from pip import main as pip_main
     pip_main(['install', '--quiet', '-U', 'pip', 'wheel', 'setuptools'])
     from pip._internal import main as pip_main
+'''
 try:
     from colorama import Fore, Style, init
     init()
@@ -30,12 +35,7 @@ def testing_external_moudules_():
     #printidle("System Type=" + '\x1b[32m' + os.environ['PROCESSOR_ARCHITECTURE'] + '\x1b[0m')
     printidle("System Type=" + '\x1b[32m' + platform.machine() + '\x1b[0m')
 
-    if os.path.exists(".\\video-engine\\rtmpdump.exe"):
-        bin_dir__ = "."
-    elif os.path.exists("..\\video-engine\\rtmpdump.exe"):
-        bin_dir__ = ".."
-    else:
-        printidle("Can't find the Binary Folder")
+
     pip_download_ = []
 
     try:
@@ -50,6 +50,12 @@ def testing_external_moudules_():
     except ImportError:
         printidle('lxml : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing lxml...')
         pip_download_.append('lxml')
+    try:
+        import wget
+        printidle('wget : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
+    except ImportError:
+        printidle('wget : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing wget...')
+        pip_download_.append('wget')
     try:
         from cryptography.hazmat.primitives.ciphers import Cipher
         printidle('Cryptography : ' + '\x1b[32m' + 'installed!' + '\x1b[0m')
@@ -96,17 +102,59 @@ def testing_external_moudules_():
                  printidle('proxybroker : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing proxybroker...')
                  pip_download_.append('proxybroker')
     if not pip_download_ == []:
+        '''
         if not 'idlelib.run' in sys.modules:
             pip_main(['install']+pip_download_)
         else:
             pip_main(['install', '--quiet']+pip_download_)
+        '''
+        subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe')
+                            , '-m', 'pip', 'install'] + pip_download_)
+    if os.path.exists(".\\crunchy-xml-decoder-py3.py"):
+        bin_dir__ = ".\\video-engine"
+    elif os.path.exists("..\\crunchy-xml-decoder-py3.py"):
+        bin_dir__ = "..\\video-engine"
+    else:
+        printidle('\x1b[31m'+"Can't find the crunchy-xml-decoder-py3 Folder"+'\x1b[0m')
+    if not os.path.exists(bin_dir__):
+        os.makedirs(bin_dir__)
+    if not os.path.exists(bin_dir__+"\\mkvmerge.exe"):
+        import wget
+        printidle('mkvmerge : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading mkvmerge...')
+        wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge.zip',bin_dir__)
+        unzip_(bin_dir__ + "\\mkvmerge.zip", bin_dir__)
+        os.remove(bin_dir__ + "\\mkvmerge.zip")
+    ## at momment rtmpdump Deprecation wil remove in the future
+    '''
+    if not os.path.exists(bin_dir__+"\\rtmpdump.exe"):
+        import wget
+        printidle('rtmpdump : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading rtmpdump...')
+        wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/rtmpdump.zip',bin_dir__)
+        unzip_(bin_dir__ + "\\rtmpdump.zip", bin_dir__)
+        os.remove(bin_dir__ + "\\rtmpdump.zip")
+    '''
+
+
 
 	
 def printidle(print_text, *args, **kwds):
     if 'idlelib.run' in sys.modules:
         print_text = re.sub('\\x1b.*?\[\d*\w','',print_text)
     print(print_text, *args, **kwds)
-    
+
+def unzip_(filename_,out):
+    zf = zipfile.ZipFile(filename_)
+    uncompress_size = sum((file.file_size for file in zf.infolist()))
+    extracted_size = 0
+    for file in zf.infolist():
+        extracted_size += file.file_size
+        percentage = extracted_size * 100/uncompress_size
+        avail_dots = 73
+        shaded_dots = int(math.floor(float(extracted_size) / uncompress_size * avail_dots))
+        sys.stdout.write("\r" + '[' + '*'*shaded_dots + '-'*(avail_dots-shaded_dots) + '] %'+str(percentage))
+        zf.extract(file,out)
+    sys.stdout.write('\n')
+
 
 if __name__ == '__main__':
     testing_external_moudules_()

@@ -21,6 +21,8 @@ sdist/
 var/
 wheels/
 *.egg-info/
+video-engine/
+export/
 .installed.cfg
 *.egg
 MANIFEST
@@ -34,6 +36,9 @@ MANIFEST
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+cookies
+settings.ini
+queue.txt
 
 # Unit test / coverage reports
 htmlcov/
