@@ -26,7 +26,7 @@ This is a composite of various scripts required to download video files from Cru
 ### INSTRUCTIONS:
 
 Pre-Setup (Only need to do these once.):
-1.  Install Python 3.3.0 or newer
+1.  Install Python 3.4.0 or newer
 2.  Run crunchy-xml-decoder.bat or crunchy-xml-decoder.py to generate necessary files (settings.ini and cookies)
 3.  choices	from the option 
 
@@ -65,8 +65,8 @@ From the anonymous original author:
 * use new way to get video url which include Hardsub video and 240p
 * new way to get usa sesson_id
 
-#### What new:
+#### What TO-DO:
 
 * clean the code from unused lines and codes
 * update the code to use new proxy function
-* remove the old function to download subtitle and use new code
+
