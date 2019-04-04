@@ -17,6 +17,7 @@ import os
 import sys
 from getpass import getpass
 import re
+import subprocess
 
 
 sys.path.append('crunchy-xml-decoder')
@@ -24,7 +25,7 @@ sys.path.append('crunchy-xml-decoder')
 from external_test import testing_external_moudules_
 testing_external_moudules_()
 from login import login, getuserstatus
-from altfuncs import config, autocatch
+from altfuncs import config, autocatch,vilos_subtitle
 from decode import decode
 from ultimate import ultimate, mkv_merge
 
@@ -86,7 +87,7 @@ if not os.path.exists(".\\settings.ini"):
 
 def idle_cmd_txt_fix(print_text):
     if 'idlelib.run' in sys.modules:
-        print_text = re.sub('\\x1b.*?\[\d*\w','',print_text)
+        print_text = re.sub(r'\\x1b.*?\[\d*\w','',print_text)
     return print_text
 
 if not os.path.exists(".\\cookies"):
@@ -330,7 +331,8 @@ def make_choise():
             pass
         elif int(seleccion) == 2:
             #decode('http://www.crunchyroll.com/military/episode-1-the-mission-begins-668503')
-            decode(input('Please enter Crunchyroll video URL:\n'))
+            #decode(input('Please enter Crunchyroll video URL:\n'))
+            vilos_subtitle(input('Please enter Crunchyroll video URL:\n'))
             pass
         elif int(seleccion) == 3:
             username = input(u'Username: ')

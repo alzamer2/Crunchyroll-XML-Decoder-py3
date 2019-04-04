@@ -108,8 +108,12 @@ def testing_external_moudules_():
         else:
             pip_main(['install', '--quiet']+pip_download_)
         '''
-        subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe')
+        try:
+            subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe')
                             , '-m', 'pip', 'install'] + pip_download_)
+        except EnvironmentError:
+            subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe')
+                                , '-m', 'pip','--user', 'install'] + pip_download_)
     if os.path.exists(".\\crunchy-xml-decoder-py3.py"):
         bin_dir__ = ".\\video-engine"
     elif os.path.exists("..\\crunchy-xml-decoder-py3.py"):

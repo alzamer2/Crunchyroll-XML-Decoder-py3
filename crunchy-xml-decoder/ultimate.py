@@ -16,7 +16,7 @@ import sys
 import requests
 #import HTMLParser
 
-from altfuncs import config, getxml, dircheck, gethtml
+from altfuncs import config, getxml, dircheck, gethtml, vilos_subtitle
 from bs4 import BeautifulSoup
 #from crunchyDec import CrunchyDec
 from unidecode import unidecode
@@ -86,6 +86,7 @@ Booting up...
     html_page_ = gethtml(page_url)
     #print(re.findall(r'vilos\.config\.media = ({.*})',html_page_))
     htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})',html_page_)[0])
+    htmlconfig['metadata']['series_title'] = json.loads(re.findall(r'vilos\.config\.analytics = ({.*})',html_page_)[0])['media_reporting_parent']['title']
     stream_url ={}
     for i in htmlconfig['streams']:
         stream_url.update({i['hardsub_lang']:i['url']})
@@ -93,17 +94,19 @@ Booting up...
     #    print(i["language"], i["url"])
     #for i in stream_url:
     #    print(i, stream_url[i])
-    media_info = getxml('RpcApiVideoPlayer_GetStandardConfig', media_id)
+    #media_info = getxml('RpcApiVideoPlayer_GetStandardConfig', media_id)
     #print(media_info)
     #print(media_info['file'])
     #print(media_info['media_metadata']['series_title'])
     #print(media_info['media_metadata']['episode_number'])
     #print(media_info['media_metadata']['episode_title'])
-    title = clean_text('%s Episode %s - %s' % (media_info['media_metadata']['series_title'],media_info['media_metadata']['episode_number'], media_info['media_metadata']['episode_title']))
+    if not htmlconfig['metadata']['episode_number'] is '':
+        title = clean_text('%s Episode %s - %s' % (htmlconfig['metadata']['series_title'],htmlconfig['metadata']['episode_number'], htmlconfig['metadata']['title']))
+    else:
+        title = clean_text('%s - %s' % (htmlconfig['metadata']['series_title'], htmlconfig['metadata']['title']))
     #title: str = re.findall(r'var mediaMetadata = \{.*?name":"(.+?)",".+?\};',html_page_)[0]
-    if len(os.path.join('export', title + '.flv')) > 255 or media_info['media_metadata']['episode_title'] is '':
-        title = clean_text('%s Episode %s' % (media_info['media_metadata']['series_title'], media_info['media_metadata']['episode_number']))
-
+    #if len(os.path.join('export', title + '.flv')) > 255 or media_info['media_metadata']['episode_title'] is '':
+    #    title = clean_text('%s Episode %s' % (media_info['media_metadata']['series_title'], media_info['media_metadata']['episode_number']))
     Loc_lang = {u'Español (Espana)': 'esES', u'Français (France)': 'frFR', u'Português (Brasil)': 'ptBR',
             u'English': 'enUS', u'Español': 'esLA', u'Türkçe': 'trTR', u'Italiano': 'itIT',
             u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский' : 'ruRU'}
@@ -165,10 +168,20 @@ Booting up...
     #print(vquality,hls_url)
     print(format('Now Downloading - ' + title))
     #video_input = os.path.join("export", title + '.ts')
-    video_input = dircheck([os.path.abspath('export') + '\\', clean_text(media_info['media_metadata']['series_title']), ' Episode',
-                          ' - ' + clean_text(media_info['media_metadata']['episode_number']),
-                          ' - ' + clean_text(media_info['media_metadata']['episode_title']),'.ts'],
-                         ['True', 'True', 'False', 'True', 1, 'True',], 240)
+    if not htmlconfig['metadata']['episode_number'] is '':
+        video_input = dircheck([os.path.abspath('export') + '\\',
+                                 clean_text(htmlconfig['metadata']['series_title']),
+                                 ' Episode',
+                                 ' - ' + clean_text(htmlconfig['metadata']['episode_number']),
+                                 ' - ' + clean_text(htmlconfig['metadata']['title']),
+                                 '.ts'],
+                                 ['True', 'True', 'False', 'True', 1, 'True',], 240)
+    else:
+        video_input = dircheck([os.path.abspath('export') + '\\',
+                                 clean_text(htmlconfig['metadata']['series_title']),
+                                 ' - ' + clean_text(htmlconfig['metadata']['title']),
+                                 '.ts'],
+                                 ['True', 'True', 1, 'True',], 240)
     if not 'idlelib.run' in sys.modules:
         video_hls(hls_url, video_input, connection_n_)
     else:
@@ -190,11 +203,15 @@ video_hls("'''+hls_url+'''", r"'''+video_input+'''", '''+str(connection_n_)+''')
         open(os.path.join(".","export","hls_script_temp.py"),"w",encoding='utf-8').write(hls_script)
         subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe'),os.path.join(".","export","hls_script_temp.py")])
         os.remove(os.path.join(".","export","hls_script_temp.py"))
-    decode(page_url)
-    mkv_merge(video_input, vquality, 'eng')
+    #decode(page_url)
+    vilos_subtitle(page_url)
+    mkv_merge(video_input, vquality, 'English')
 
-def mkv_merge(video_input,pixl,defult_lang):
+def mkv_merge(video_input,pixl,defult_lang=None):
     print('Starting mkv merge')
+    lang1, lang2, forcesub, forceusa, localizecookies, vquality, onlymainsub, connection_n_, proxy_ = config()
+    if defult_lang is None:
+        defult_lang = onlymainsub
     #print(os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe")))
     #print(os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe")))
     if os.path.exists(os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe"))):
@@ -207,13 +224,26 @@ def mkv_merge(video_input,pixl,defult_lang):
     filename_output = os.path.join(working_dir, working_name + '[' + pixl +'].mkv')
     cmd = [mkvmerge, "-o", os.path.abspath(filename_output), '--language', '0:jpn', '--language', '1:jpn',
            '-a', '1', '-d', '0', os.path.abspath(video_input), '--title', working_name]
-
+    lang_iso = {'English': 'English (US)', u'Español' : u'Espa\xf1ol', u'Español (Espana)': u'Espa\xf1ol (Espa\xf1a)',
+                u'Français (France)': u'Fran\xe7ais (France)', u'Português (Brasil)': u'Portugu\xeas (Brasil)',
+                u'Italiano': 'Italiano', u'Deutsch': 'Deutsch', u'العربية': 'العربية', u'Русский': 'Русский',
+                u'Türkçe': 'uTürkçe'}
+    defult_lang_sub = ''
+    for file in os.listdir(working_dir):
+        if file.startswith(working_name) and file.endswith(".ass"):
+            print(re.findall(r'\]\[(.*)\]',file)[0], lang_iso[lang1], lang_iso[lang2], defult_lang_sub)
+            if re.findall(r'\]\[(.*)\]',file)[0] == lang_iso[lang1]:
+                defult_lang_sub = re.findall(r'\]\[(.*)\]',file)[0]
+            if defult_lang_sub == '':
+                if re.findall(r'\]\[(.*)\]', file)[0] == lang_iso[lang2]:
+                    defult_lang_sub = re.findall(r'\]\[(.*)\]', file)[0]
+    print(defult_lang_sub)
     for file in os.listdir(working_dir):
         if file.startswith(working_name) and file.endswith(".ass"):
             #print(os.path.abspath(os.path.join(working_dir,file)))
             cmd += ['--language', '0:' + re.findall(r'\[(.*)\]\[',file)[0],
                     '--sub-charset', '0:UTF-8',
-                    '--default-track', '0:yes' if 1!=1 else '0:no',
+                    '--default-track', '0:yes' if re.findall(r'\]\[(.*)\]',file)[0] == defult_lang_sub else '0:no',
                     '--forced-track', '0:yes',
                     '--track-name', '0:' + re.findall(r'\]\[(.*)\]',file)[0], '-s', '0',
                     os.path.abspath(os.path.join(working_dir,file))]

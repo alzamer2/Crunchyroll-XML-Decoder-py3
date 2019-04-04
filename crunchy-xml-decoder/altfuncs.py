@@ -9,6 +9,11 @@ import pickle
 import requests
 import cfscrape
 from lxml import etree
+import json
+from unidecode import unidecode
+
+from urllib.request import url2pathname
+import os
 
 
 def config():
@@ -29,10 +34,65 @@ def config():
     proxy_ = configr.get('SETTINGS', 'Proxy')
     return [lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_]
 
+class LocalFileAdapter(requests.adapters.BaseAdapter):
+    """Protocol Adapter to allow Requests to GET file:// URLs
+    to use when debuging
+
+    @todo: Properly handle non-empty hostname portions.
+    """
+
+    @staticmethod
+    def _chkpath(method, path):
+        """Return an HTTP status for the given filesystem path."""
+        if method.lower() in ('put', 'delete'):
+            return 501, "Not Implemented"  # TODO
+        elif method.lower() not in ('get', 'head'):
+            return 405, "Method Not Allowed"
+        elif os.path.isdir(path):
+            return 400, "Path Not A File"
+        elif not os.path.isfile(path):
+            return 404, "File Not Found"
+        elif not os.access(path, os.R_OK):
+            return 403, "Access Denied"
+        else:
+            return 200, "OK"
+
+    def send(self, req, **kwargs):  # pylint: disable=unused-argument
+        """Return the file specified by the given request
+
+        @type req: C{PreparedRequest}
+        @todo: Should I bother filling `response.headers` and processing
+               If-Modified-Since and friends using `os.stat`?
+        """
+        path = os.path.normcase(os.path.normpath(url2pathname(req.path_url)))
+        response = requests.Response()
+
+        response.status_code, response.reason = self._chkpath(req.method, path)
+        if response.status_code == 200 and req.method.lower() != 'head':
+            try:
+                response.raw = open(path, 'rb')
+            except (OSError, IOError) as err:
+                response.status_code = 500
+                response.reason = str(err)
+
+        if isinstance(req.url, bytes):
+            response.url = req.url.decode('utf-8')
+        else:
+            response.url = req.url
+
+        response.request = req
+        response.connection = self
+
+        return response
+
+    def close(self):
+        pass
+
 
 def gethtml(url, req='', headers=''):
     # session = requests.session()
     session = cfscrape.create_scraper()
+    session.mount('file://', LocalFileAdapter())
     cookies_ = ConfigParser()
     cookies_.read('cookies')
     session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id')
@@ -40,6 +100,7 @@ def gethtml(url, req='', headers=''):
     lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
     if forceusa:
         session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id_usa')
+        session.cookies['session_id'] = cookies_.get('COOKIES', 'sess_id_usa')
     del session.cookies['c_visitor']
     if not forceusa and localizecookies:
         session.cookies['c_locale'] = \
@@ -178,3 +239,92 @@ def dircheck(text_=[], text_condition_=[], max_len=255, max_retries=''):
         if loop_check_output == output_data_:
             break
     return output_data_
+
+def vilos_subtitle(page_url_='', one_sub=None):
+    print('''
+------------------------------
+---- Downloading Subtitle ----
+------------------------------''')
+    lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
+    if page_url_ is '':
+        page_url_ = input('Please enter Crunchyroll video URL:\n')
+    if not re.findall(r'https?://www\.crunchyroll\.com/.+/.+-(\d*)', page_url_):
+        print(idle_cmd_txt_fix("\x1b[31m" + "ERROR: Invalid URL." + "\x1b[0m"))
+        exit()
+    html_page_ = gethtml(page_url_)
+    htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})', html_page_)[0])
+    htmlconfig['metadata']['series_title'] = \
+    json.loads(re.findall(r'vilos\.config\.analytics = ({.*})', html_page_)[0])['media_reporting_parent']['title']
+    lang_iso = {'enUS' : 'English (US)', 'esLA' : u'Espa\xf1ol', 'esES' : u'Espa\xf1ol (Espa\xf1a)',
+                'frFR' : u'Fran\xe7ais (France)', 'ptBR' : u'Portugu\xeas (Brasil)', 'itIT' : 'Italiano',
+                'deDE' : 'Deutsch','arME' :  'العربية', 'ruRU' : 'Русский','enGB' : 'English (UK)', 'trTR':'uTürkçe'}
+    lang_iso2 = {'enUS': 'eng', 'esLA': 'spa', 'esES': 'spa', 'frFR': 'fre', 'ptBR': 'por', 'itIT': 'ita',
+                 'deDE': 'deu', 'arME': 'ara', 'ruRU': 'rus', 'enGB': 'eng', 'trTR': 'tur'}
+    Loc_lang = {u'Español (Espana)': 'esES', u'Français (France)': 'frFR', u'Português (Brasil)': 'ptBR',
+                u'English': 'enUS', u'Español': 'esLA', u'Türkçe': 'trTR', u'Italiano': 'itIT',
+                u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский': 'ruRU'}
+
+    if one_sub is None:
+        one_sub = onlymainsub
+    #avible_sub=[]
+    one_sub_lang = ''
+    for i in htmlconfig['subtitles']:
+        #print(i["language"], Loc_lang[lang],Loc_lang[lang2],one_sub_lang)
+        if i["language"] == Loc_lang[lang]:
+            one_sub_lang = i["language"]
+        if one_sub_lang == '':
+            if i["language"] == Loc_lang[lang2]:
+                one_sub_lang = i["language"]
+        #avible_sub += [i["language"]]
+    if one_sub_lang == '':
+        try:
+            one_sub_lang = htmlconfig['subtitles'][0]["language"]
+        except IndexError:
+            print('The video has hardcoded subtitles.')
+            exit()
+
+    for i in htmlconfig['subtitles']:
+        if one_sub is True:
+            if i["language"] != one_sub_lang:
+                continue
+        if not htmlconfig['metadata']['episode_number'] is '':
+            sub_file_ = dircheck([os.path.abspath('export') + '\\',
+                                  clean_text(htmlconfig['metadata']['series_title']),
+                                  ' Episode',
+                                  ' - ' + clean_text(htmlconfig['metadata']['episode_number']),
+                                  ' - ' + clean_text(htmlconfig['metadata']['title']),
+                                  '[' + lang_iso2[i["language"]] + ']',
+                                  '[' + lang_iso[i["language"]] + ']',
+                                  '.ass'],
+                                 ['True', 'True', 'False', 'True', 1, 'True', 'False', 'True'], 240)
+        else:
+            sub_file_ = dircheck([os.path.abspath('export') + '\\',
+                                  clean_text(htmlconfig['metadata']['series_title']),
+                                  ' - ' + clean_text(htmlconfig['metadata']['title']),
+                                  '[' + lang_iso2[i["language"]] + ']',
+                                  '[' + lang_iso[i["language"]] + ']',
+                                  '.ass'],
+                                 ['True', 'True', 1, 'True', 'False', 'True'], 240)
+        #print(i["language"], i["url"])
+        try:
+            print(idle_cmd_txt_fix("Attempting to download " + '\x1b[32m' + lang_iso[i["language"]] + '\x1b[0m' + " subtitle..."))
+        except:
+            print(unidecode(idle_cmd_txt_fix("Attempting to download " + '\x1b[32m' + lang_iso[i["language"]] + '\x1b[0m' + " subtitle...")))
+        subtitle_ = requests.get(i["url"]).content
+        #subtitle_.encoding = 'utf-8'
+        open(sub_file_,'wb').write(subtitle_)
+
+
+
+def idle_cmd_txt_fix(print_text):
+    if 'idlelib.run' in sys.modules:
+        print_text = re.sub(r'\\x1b.*?\[\d*\w','',print_text)
+    return print_text
+
+def clean_text(text_):
+    ### Taken from http://stackoverflow.com/questions/6116978/python-replace-multiple-strings and improved to include the backslash###
+    rep = {' / ': ' - ', '/': ' - ', ':': '-', '?': '.', '"': "''", '|': '-', '&quot;': "''", 'a*G': 'a G', '*': '#',
+           r'\u2026': '...', r' \ ': ' - '}
+    rep = dict((re.escape(k), v) for k, v in rep.items())
+    pattern = re.compile("|".join(rep.keys()))
+    return unidecode(pattern.sub(lambda m: rep[re.escape(m.group(0))], text_))
