@@ -167,18 +167,18 @@ def autocatch():
     # if forceusa:
     #    sess_id_ = cookies_.get('COOKIES', 'sess_id_usa')
     payload = {'session_id': sess_id_, 'media_type': 'anime', 'fields': 'series.url,series.series_id', 'limit': '1500',
-               'filter': 'prefix:' + re.sub(r'https?://www\.crunchyroll\.com/', '', url)[:1]}
+               'filter': 'prefix:' + re.findall(r'https?://www\.crunchyroll\.com/(?:\w{2,4}/)?(.+?)(?=/|$)', url)[0][:1]}
     list_series = session.post('http://api.crunchyroll.com/list_series.0.json', params=payload).json()
-    # print list_series['data'][877],len(list_series['data'])
-    url_trim = re.findall(r'https?://www\.crunchyroll\.com/.+(/.+)',url)
-    if url_trim == []:
-        url_trim = ''
-    else:
-        url_trim = url_trim[0]
-    url = re.sub(url_trim,'',url)
+    #print(list_series['data'])
+    #url_trim = re.findall(r'https?://www\.crunchyroll\.com/.+(/.+)',url)
+    #if url_trim == []:
+    #    url_trim = ''
+    #else:
+    #    url_trim = url_trim[0]
+    #url = re.sub(url_trim,'',url)
     series_id = ''
     for i in list_series['data']:
-        if re.findall(r'https?://(www\.crunchyroll\.com/.+)',url) == re.findall(r'https?://(www\.crunchyroll\.com/.+)',i['url']):
+        if re.findall(r'https?://www\.crunchyroll\.com/(?:\w{2,4}/)?(.+?)(?=/|$)',url)[0].lower() == re.findall(r'https?://www\.crunchyroll\.com/(?:\w{2,4}/)?(.+?)(?=/|$)',i['url'])[0].lower():
             series_id = i['series_id']
     payload = {'session_id': sess_id_, 'series_id': series_id, 'fields': 'media.url', 'limit': '1500'}
     list_media = session.post('http://api.crunchyroll.com/list_media.0.json', params=payload).json()
