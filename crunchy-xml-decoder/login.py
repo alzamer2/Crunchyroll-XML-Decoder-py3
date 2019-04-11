@@ -35,10 +35,13 @@ def getuserstatus(sess_id_renew = False,sess_id_usa=''):
         sess_id_ = cookies_.get('COOKIES', 'sess_id')
         auth = cookies_.get('COOKIES', 'auth')
     if sess_id_renew:
+        device_id = ''.join(random.sample(string.ascii_letters + string.digits, 32))
+        device_id_usa = ''.join(random.sample(string.ascii_letters + string.digits, 32))
         session.get('http://api.crunchyroll.com/end_session.0.json?session_id='+sess_id_usa).json()
         session.get('http://api.crunchyroll.com/end_session.0.json?session_id='+sess_id_).json()
     checkusaid = session.get('http://api.crunchyroll.com/start_session.0.json?session_id='+sess_id_usa).json()
-    if checkusaid['code'] == 'ok':
+    checkusaid2 = session.get('http://api.crunchyroll.com/start_session.0.json?session_id=' + sess_id_).json()
+    if checkusaid['code'] == 'ok' and checkusaid2['code'] == 'ok':
         if checkusaid['data']['user'] is not None:
             user1 = checkusaid['data']['user']['username']
             if checkusaid['data']['user']['premium'] == '':
@@ -53,11 +56,14 @@ def getuserstatus(sess_id_renew = False,sess_id_usa=''):
         payload = {'device_id': device_id, 'api_ver': '1.0',
                    'device_type': 'com.crunchyroll.crunchyroid', 'access_token': 'Scwg9PRRZ19iVwD', 'version': '2313.8',
                    'locale': 'jaJP', 'duration': '9999999999', 'auth' : auth}
-        #if altfuncs.config()[8] != '':
-        #    proxies = {'http': altfuncs.config()[8]}
-        #else:
-        #    proxies = {}
-        proxies = {}
+        if config()[8] != '':
+            proxy_ = get_proxy(['HTTPS'], [config()[8]])
+            try:
+                proxies = {'http': proxy_[0]}
+            except:
+                proxies = {}
+        else:
+            proxies = {}
         sess_id_usa = create_sess_id_usa(payload_usa)
         try:
             checkusaid2 = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload).json()
@@ -91,11 +97,16 @@ def login(username, password):
     payload = {'device_id': device_id, 'api_ver': '1.0',
                'device_type': 'com.crunchyroll.crunchyroid', 'access_token': 'Scwg9PRRZ19iVwD', 'version': '2313.8',
                'locale': 'jaJP', 'duration': '9999999999'}
-    #if altfuncs.config()[8] != '':
-    #    proxies = {'http': altfuncs.config()[8]}
-    #else:
-    #
-    proxies = {}
+    if config()[8] != '':
+        proxy_ = get_proxy(['HTTPS'], [config()[8]])
+        try:
+            proxies = {'http': proxy_[0]}
+        except:
+            proxies = {}
+    else:
+        proxies = {}
+
+
     sess_id_usa = create_sess_id_usa(payload_usa)
     #print(sess_id_usa)
     try:

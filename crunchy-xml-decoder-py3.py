@@ -239,7 +239,7 @@ def settings_():
 6.- Localize cookies = '''+('\x1b[32m'+str(slocalizecookies)+'\x1b[0m' if slocalizecookies else '\x1b[31m'+str(slocalizecookies)+'\x1b[0m')+'''		#Localize the cookies (Experiment)
 7.- Only One Subtitle = '''+('\x1b[32m'+str(vonlymainsub)+'\x1b[0m' if vonlymainsub else '\x1b[31m'+str(vonlymainsub)+'\x1b[0m')+'''		#Only download Primary Language
 8.- Change the Number of The Download Connection = \x1b[32m'''+str(vconnection_n_)+'''\x1b[0m
-9.- use proxy(it disable if left blank)  = \x1b[32m'''+vproxy_+''' \x1b[0m  #ex:80.80.80.80:8080
+9.- use proxy(it disable if left blank)  = \x1b[32m'''+vproxy_+''' \x1b[0m  #ex:US
 10.- Restore Default Settings
 > '''))
             seleccion = int(input('> '))
@@ -293,7 +293,7 @@ def settings_():
         elif seleccion == 9 :
             vproxy_ = input(u'Please Input The Proxy: ')
             defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_)
-            login.getuserstatus(True)
+            getuserstatus(True)
             continue
         elif seleccion == 10 :
             defaultsettings(iquality, ilang1, ilang2, iforcesub, iforceusa, ilocalizecookies, ionlymainsub, iconnection_n_, iproxy_)
