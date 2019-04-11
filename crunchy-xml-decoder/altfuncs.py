@@ -159,37 +159,19 @@ def getxml(req, med_id):
 
 def autocatch():
     url = input(u'indicate the url : ')
-    session = requests.session()
-    cookies_ = ConfigParser()
-    cookies_.read('cookies')
-    sess_id_ = cookies_.get('COOKIES', 'sess_id_usa')
-    # sess_id_ = cookies_.get('COOKIES', 'sess_id')
-    # if forceusa:
-    #    sess_id_ = cookies_.get('COOKIES', 'sess_id_usa')
-    payload = {'session_id': sess_id_, 'media_type': 'anime', 'fields': 'series.url,series.series_id', 'limit': '1500',
-               'filter': 'prefix:' + re.findall(r'https?://www\.crunchyroll\.com/(?:\w{2,4}/)?(.+?)(?=/|$)', url)[0][:1]}
-    list_series = session.post('http://api.crunchyroll.com/list_series.0.json', params=payload).json()
-    #print(list_series['data'])
-    #url_trim = re.findall(r'https?://www\.crunchyroll\.com/.+(/.+)',url)
-    #if url_trim == []:
-    #    url_trim = ''
-    #else:
-    #    url_trim = url_trim[0]
-    #url = re.sub(url_trim,'',url)
-    series_id = ''
-    for i in list_series['data']:
-        if re.findall(r'https?://www\.crunchyroll\.com/(?:\w{2,4}/)?(.+?)(?=/|$)',url)[0].lower() == re.findall(r'https?://www\.crunchyroll\.com/(?:\w{2,4}/)?(.+?)(?=/|$)',i['url'])[0].lower():
-            series_id = i['series_id']
-    payload = {'session_id': sess_id_, 'series_id': series_id, 'fields': 'media.url', 'limit': '1500'}
-    list_media = session.post('http://api.crunchyroll.com/list_media.0.json', params=payload).json()
-    #print(list_media)
-    aList = []
-    take = open("queue.txt", "w")
-    take.write(u'#the any line that has hash before the link will be skiped\n')
-    aList.reverse()
-    for i in list_media['data']:
-        # print >> take, i['url']
-        print(i['url'], file=take)
+    url = ''.join(re.findall(r'(https?://www\.crunchyroll\.com/)(?:[\w-]{2,5}/)?(.+?)(?=/|$)',url)[0])
+    html = gethtml(url)
+    html_tree = etree.fromstring(html, etree.HTMLParser())
+    episodes_link = html_tree.xpath('//ul[@class="list-of-seasons cf"]/li/a[re:match(text(),"^(?:(?!Dub).)*$")]/../ul/li/div/a/@href',
+                                    namespaces={"re": "http://exslt.org/regular-expressions"})
+    if not os.path.exists("queue.txt"):
+        take = open("queue.txt", "w")
+        take.write(u'#the any line that has hash before the link will be skiped\n')
+    else:
+        take = open("queue.txt", "a")
+    for link in episodes_link[::-1]:
+        episode_link = 'http://www.crunchyroll.com'+re.findall(r'(\/[^\/]*?\/[^\/]*?)$',link)[0]
+        print(episode_link, file=take)
     take.close()
 
 
