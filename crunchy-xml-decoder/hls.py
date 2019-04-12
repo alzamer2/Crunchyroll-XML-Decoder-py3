@@ -17,7 +17,8 @@ import subprocess
 import requests
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-from backports.shutil_get_terminal_size import get_terminal_size
+#from backports.shutil_get_terminal_size import get_terminal_size
+from pager import _windows_get_window_size as get_terminal_size
 from colorama import Fore, Style, init
 from urllib.parse import urljoin,urlparse
 import codecs

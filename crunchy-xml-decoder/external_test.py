@@ -81,11 +81,11 @@ def testing_external_moudules_():
         print(idle_cmd_txt_fix('BeautifulSoup : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing BeautifulSoup...'))
         pip_download_.append('beautifulsoup4')
     try:
-        from backports.shutil_get_terminal_size import get_terminal_size
-        print(idle_cmd_txt_fix('backports.shutil_get_terminal_size : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
+        from pager import getwidth as get_terminal_size
+        print(idle_cmd_txt_fix('pager : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        print(idle_cmd_txt_fix('backports.shutil_get_terminal_size : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing backports.shutil_get_terminal_size...'))
-        pip_download_.append('backports.shutil_get_terminal_size')
+        print(idle_cmd_txt_fix('pager : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing pager...'))
+        pip_download_.append('pager')
     try:
         from unidecode import unidecode
         print(idle_cmd_txt_fix('Unidecode : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))

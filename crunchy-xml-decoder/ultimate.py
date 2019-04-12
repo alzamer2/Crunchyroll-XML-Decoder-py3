@@ -20,7 +20,8 @@ from altfuncs import config, getxml, dircheck, gethtml, vilos_subtitle
 from bs4 import BeautifulSoup
 #from crunchyDec import CrunchyDec
 from unidecode import unidecode
-from hls import video_hls
+#from hls_353 import video_hls
+from hls_ import video_hls
 from configparser import ConfigParser
 from decode import decode
 import json
