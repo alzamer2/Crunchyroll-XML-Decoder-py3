@@ -34,6 +34,8 @@ def getuserstatus(sess_id_renew = False,sess_id_usa=''):
         sess_id_usa = cookies_.get('COOKIES', 'sess_id_usa')
         sess_id_ = cookies_.get('COOKIES', 'sess_id')
         auth = cookies_.get('COOKIES', 'auth')
+    else:
+        sess_id_ = sess_id_usa
     if sess_id_renew:
         device_id = ''.join(random.sample(string.ascii_letters + string.digits, 32))
         device_id_usa = ''.join(random.sample(string.ascii_letters + string.digits, 32))
