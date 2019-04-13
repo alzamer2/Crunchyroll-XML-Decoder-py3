@@ -270,7 +270,7 @@ def vilos_subtitle(page_url_='', one_sub=None):
             if i["language"] != one_sub_lang:
                 continue
         if not htmlconfig['metadata']['episode_number'] is '':
-            sub_file_ = dircheck([os.path.abspath('export') + '\\',
+            sub_file_ = dircheck([os.path.join(os.path.abspath('export'),''),
                                   clean_text(htmlconfig['metadata']['series_title']),
                                   ' Episode',
                                   ' - ' + clean_text(htmlconfig['metadata']['episode_number']),
@@ -280,7 +280,7 @@ def vilos_subtitle(page_url_='', one_sub=None):
                                   '.ass'],
                                  ['True', 'True', 'False', 'True', 1, 'True', 'False', 'True'], 240)
         else:
-            sub_file_ = dircheck([os.path.abspath('export') + '\\',
+            sub_file_ = dircheck([os.path.join(os.path.abspath('export'),''),
                                   clean_text(htmlconfig['metadata']['series_title']),
                                   ' - ' + clean_text(htmlconfig['metadata']['title']),
                                   '[' + lang_iso2[i["language"]] + ']',

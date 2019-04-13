@@ -31,8 +31,8 @@ from ultimate import ultimate, mkv_merge
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#(CHECKING)#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 
-if not os.path.exists("export"):
-    os.makedirs("export")
+if not os.path.lexists(os.path.join(".","export")):
+    os.makedirs(os.path.join(".","export"))
 
 '''
 try:
@@ -77,12 +77,12 @@ localizecookies = '''+str(vlocalizecookies)+'''
 onlymainsub='''+str(onlymainsub)+'''
 # Set this option to increase the Number of the connection
 connection_n_='''+str(vconnection_n_)+'''
-# Set this option to use proxy, example: 80.80.80.80:8080
+# Set this option to use proxy, example: US
 Proxy = '''+vproxy_+'''
 '''
-    open('.\\settings.ini', 'w', encoding='utf8').write(dsettings)
+    open(os.path.join('.','settings.ini'), 'w', encoding='utf8').write(dsettings)
 
-if not os.path.exists(".\\settings.ini"):
+if not os.path.lexists(os.path.join('.','settings.ini')):
     defaultsettings(iquality, ilang1, ilang2, iforcesub, iforceusa, ilocalizecookies, ionlymainsub, iconnection_n_, iproxy_)
 
 def idle_cmd_txt_fix(print_text):
@@ -90,7 +90,7 @@ def idle_cmd_txt_fix(print_text):
         print_text = re.sub(r'\\x1b.*?\[\d*\w','',print_text)
     return print_text
 
-if not os.path.exists(".\\cookies"):
+if not os.path.lexists(os.path.join('.','cookies')):
     if input(u'Do you have an account [Y/N]?').lower() == 'y':
         username = input(u'Username: ')
         password = getpass(u'Password(don\'t worry the password are typing but hidden:')
@@ -110,7 +110,7 @@ else:
     
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#(FUNCTION)#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 def queueu(queuepath):
-    if not os.path.exists(queuepath):
+    if not os.path.lexists(queuepath):
         open(queuepath, 'w').write(u'#the any line that has hash before the link will be skiped\n')
         subprocess.call('notepad.exe '+queuepath)
     lines = open(queuepath).readlines()
@@ -345,9 +345,9 @@ def make_choise():
         elif int(seleccion) == 5:
             #pass
             autocatch()
-            queueu('.\\queue.txt')
+            queueu(os.path.join('.','queue.txt'))
         elif int(seleccion) == 6:
-            queueu('.\\queue.txt')
+            queueu(os.path.join('.','queue.txt'))
         elif int(seleccion) == 999:
             settings_()
         else:

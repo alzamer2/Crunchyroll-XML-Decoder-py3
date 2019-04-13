@@ -170,7 +170,7 @@ Booting up...
     print(format('Now Downloading - ' + title))
     #video_input = os.path.join("export", title + '.ts')
     if not htmlconfig['metadata']['episode_number'] is '':
-        video_input = dircheck([os.path.abspath('export') + '\\',
+        video_input = dircheck([os.path.join(os.path.abspath('export'),''),
                                  clean_text(htmlconfig['metadata']['series_title']),
                                  ' Episode',
                                  ' - ' + clean_text(htmlconfig['metadata']['episode_number']),
@@ -178,7 +178,7 @@ Booting up...
                                  '.ts'],
                                  ['True', 'True', 'False', 'True', 1, 'True',], 240)
     else:
-        video_input = dircheck([os.path.abspath('export') + '\\',
+        video_input = dircheck([os.path.join(os.path.abspath('export'),''),
                                  clean_text(htmlconfig['metadata']['series_title']),
                                  ' - ' + clean_text(htmlconfig['metadata']['title']),
                                  '.ts'],
@@ -186,9 +186,9 @@ Booting up...
     if not 'idlelib.run' in sys.modules:
         video_hls(hls_url, video_input, connection_n_)
     else:
-        if os.path.exists(os.path.abspath(os.path.join(".","crunchy-xml-decoder", "hls.py"))):
+        if os.path.lexists(os.path.abspath(os.path.join(".","crunchy-xml-decoder", "hls.py"))):
             hls_s_path =os.path.abspath(os.path.join(".","crunchy-xml-decoder"))
-        elif os.path.exists(os.path.abspath(os.path.join("..","crunchy-xml-decoder", "hls.py"))):
+        elif os.path.lexists(os.path.abspath(os.path.join("..","crunchy-xml-decoder", "hls.py"))):
             hls_s_path =os.path.abspath(os.path.join("..","crunchy-xml-decoder"))
         else:
             print('hls script not found')
@@ -215,9 +215,9 @@ def mkv_merge(video_input,pixl,defult_lang=None):
         defult_lang = onlymainsub
     #print(os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe")))
     #print(os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe")))
-    if os.path.exists(os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe"))):
+    if os.path.lexists(os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe"))):
         mkvmerge = os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe"))
-    elif os.path.exists(os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe"))):
+    elif os.path.lexists(os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe"))):
         mkvmerge = os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe"))
     #mkvmerge = os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe"))
     working_dir = os.path.dirname(video_input)
@@ -264,7 +264,10 @@ def mkv_merge(video_input,pixl,defult_lang=None):
                 #cmd.extend(['-s', '0'])
                 #cmd.append(filename_subtitle)
     #print(cmd)
-    subprocess.call(cmd)
+    if os.name == 'nt':
+        subprocess.call(cmd)
+    else:
+        subprocess.call(['wine']+cmd)
     #subprocess.Popen(cmd.encode('ascii', 'surrogateescape').decode('utf-8'))
     print('Merge process complete')
     print('Starting Final Cleanup')

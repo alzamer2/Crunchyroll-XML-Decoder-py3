@@ -30,7 +30,7 @@ def testing_external_moudules_():
         else:
             python_bit_ = "32 bit"
     python_version_ = re.findall('\d\.\d\.?\d?',sys.version)[0]
-    print(idle_cmd_txt_fix("python version=" + '\x1b[32m' + re.findall("[0-9]\.[0-9]\.[0-9]", sys.version).pop() + " " + python_bit_ + '\x1b[0m'))
+    print(idle_cmd_txt_fix("python version=" + '\x1b[32m' + '.'.join([str(i) for i in sys.version_info[:3]]) + " " + python_bit_ + '\x1b[0m'))
     print(idle_cmd_txt_fix("OS Version=" + '\x1b[32m' + platform.platform().replace("-", " ") + '\x1b[0m'))
     #print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + os.environ['PROCESSOR_ARCHITECTURE'] + '\x1b[0m'))
     print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + platform.machine() + '\x1b[0m'))
@@ -93,14 +93,14 @@ def testing_external_moudules_():
         print(idle_cmd_txt_fix('Unidecode : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing Unidecode...'))
         pip_download_.append('unidecode')
     python_version_c = re.findall('(\d)\.(\d\.?\d?)',sys.version)[0]
-    if int(python_version_c[0]) >= 3:
-        if float(python_version_c[1]) >= 5.3:
-            try:
-                 from proxybroker import Broker
-                 print(idle_cmd_txt_fix('proxybroker : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-            except ImportError:
-                 print(idle_cmd_txt_fix('proxybroker : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing proxybroker...'))
-                 pip_download_.append('proxybroker')
+    #if int(python_version_c[0]) >= 3:
+    #    if float(python_version_c[1]) >= 5.3:
+    #        try:
+    #             from proxybroker import Broker
+    #             print(idle_cmd_txt_fix('proxybroker : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
+    #        except ImportError:
+    #             print(idle_cmd_txt_fix('proxybroker : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing proxybroker...'))
+    #             pip_download_.append('proxybroker')
     if not pip_download_ == []:
         '''
         if not 'idlelib.run' in sys.modules:
@@ -114,20 +114,20 @@ def testing_external_moudules_():
         except EnvironmentError:
             subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe')
                                 , '-m', 'pip','--user', 'install'] + pip_download_)
-    if os.path.exists(".\\crunchy-xml-decoder-py3.py"):
-        bin_dir__ = ".\\video-engine"
-    elif os.path.exists("..\\crunchy-xml-decoder-py3.py"):
-        bin_dir__ = "..\\video-engine"
+    if os.path.lexists(os.path.join('.', 'crunchy-xml-decoder-py3.py')):
+        bin_dir__ = os.path.join(".", "video-engine")
+    elif os.path.lexists(os.path.join('..', 'crunchy-xml-decoder-py3.py')):
+        bin_dir__ = os.path.join("..", "video-engine")
     else:
         print(idle_cmd_txt_fix('\x1b[31m'+"Can't find the crunchy-xml-decoder-py3 Folder"+'\x1b[0m'))
-    if not os.path.exists(bin_dir__):
+    if not os.path.lexists(bin_dir__):
         os.makedirs(bin_dir__)
-    if not os.path.exists(bin_dir__+"\\mkvmerge.exe"):
+    if not os.path.lexists(os.path.join(bin_dir__,"mkvmerge.exe")):
         import wget
         print(idle_cmd_txt_fix('mkvmerge : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading mkvmerge...'))
         wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge.zip',bin_dir__)
-        unzip_(bin_dir__ + "\\mkvmerge.zip", bin_dir__)
-        os.remove(bin_dir__ + "\\mkvmerge.zip")
+        unzip_(os.path.join(bin_dir__,"mkvmerge.zip"), bin_dir__)
+        os.remove(os.path.join(bin_dir__,"mkvmerge.zip"))
     ## at momment rtmpdump Deprecation wil remove in the future
     '''
     if not os.path.exists(bin_dir__+"\\rtmpdump.exe"):

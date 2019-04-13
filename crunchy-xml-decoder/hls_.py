@@ -154,7 +154,10 @@ def fetch_streams(output, video, connection_n):
 ##########################################################################################:---
 
 def progress_bar_(currect,target,text_center='',text_end='%100',text_end_lenght=0,center_bgc='30;42',defult_bgc=''):
-    c_width= get_terminal_size()[0]
+    try:
+        c_width = get_terminal_size()[0]
+    except:
+        c_width = 60
     if text_end_lenght == 0 : text_end_lenght = len(text_end)
     if text_end == '%100':
         text_end = '%'+str(currect * 100 / target)
