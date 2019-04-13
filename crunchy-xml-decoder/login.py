@@ -84,8 +84,11 @@ auth = ''' + auth + '''
             user1 = checkusaid2['data']['user']['username']
             if checkusaid2['data']['user']['premium'] == '':
                 status = 'Free Member'
-            else:  # later will add Premium+ status
-                status = 'Premium'
+            else:
+                if checkusaid2['data']['user']['access_type'] == 'premium_plus':
+                    status = 'Premium Plus'
+                else:
+                    status = 'Premium'
     return [status, user1]
 
 
