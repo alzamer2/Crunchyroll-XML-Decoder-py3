@@ -12,14 +12,14 @@ Requires Python modules:
 * lxml (https://pypi.python.org/pypi/lxml/3.2.5)
 * m3u8 (https://pypi.python.org/pypi/m3u8/)
 * cfscrape (https://pypi.python.org/pypi/cfscrape/)
-* backports
 * requests
 * colorama
 * cryptography==2.4.2
 * m3u8
 * beautifulsoup4
-* backports.shutil_get_terminal_size
+* pager
 * unidecode
+* wget
 
 This is a composite of various scripts required to download video files from CrunchyRoll that have been automated with a batch file.
 
@@ -29,6 +29,15 @@ Pre-Setup (Only need to do these once.):
 1.  Install Python 3.4.0 or newer
 2.  Run crunchy-xml-decoder.bat or crunchy-xml-decoder.py to generate necessary files (settings.ini and cookies)
 3.  choices	from the option 
+
+for Linux user:
+you need to prepare wine32 environment
+i'm not that expert in liunix system but thanks to @RGFRv2 he gave me some tips
+for those that don't know:
+1. connected directly as root with:
+`dpkg --add-architecture i386 && apt-get update && apt-get install wine32`
+2. update in case with:
+`sudo apt-get update`
 
 Per-Video Process:
 1.  Copy the URL of the CrunchyRoll video you want to download from your web browser
@@ -64,9 +73,11 @@ From the anonymous original author:
 * add color for console
 * use new way to get video url which include Hardsub video and 240p
 * new way to get usa sesson_id
+* add new proxy function
+* cleaned HLS code and removed extra parts, now its faster
 
 #### What TO-DO:
 
 * clean the code from unused lines and codes
-* update the code to use new proxy function
+
 
