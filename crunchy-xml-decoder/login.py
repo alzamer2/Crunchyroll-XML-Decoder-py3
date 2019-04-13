@@ -128,6 +128,13 @@ def login(username, password):
     # sys.exit()
     else:
         print('Login as ' + userstatus[1] + ' successfully.' if 'idlelib.run' in sys.modules else 'Login as ' + '\x1b[32m' + userstatus[1] + '\x1b[0m' + ' successfully.')
+    payload = {'device_id': device_id, 'api_ver': '1.0',
+               'device_type': 'com.crunchyroll.crunchyroid', 'access_token': 'Scwg9PRRZ19iVwD', 'version': '2313.8',
+               'locale': 'jaJP', 'duration': '9999999999', 'auth': auth}
+    try:
+        sess_id_ = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload).json()['data']['session_id']
+    except requests.exceptions.ProxyError:
+        sess_id_ = session.post('http://api.crunchyroll.com/start_session.0.json', params=payload).json()['data']['session_id']
     cookies_out = '''[COOKIES]
 device_id = ''' + device_id + '''
 device_id_usa = ''' + device_id_usa + '''

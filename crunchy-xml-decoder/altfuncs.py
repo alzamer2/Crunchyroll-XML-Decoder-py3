@@ -115,8 +115,9 @@ def gethtml(url, req='', headers=''):
         headers = {'Referer': 'http://crunchyroll.com/', 'Host': 'www.crunchyroll.com',
                    'User-Agent': 'Mozilla/5.0  Windows NT 6.1; rv:26.0 Gecko/20100101 Firefox/26.0'}
     res = session.get(url, params=req, headers=headers)
-    # print(session.get(url, params=req, headers=headers).url)
     res.encoding = 'UTF-8'
+    # print(session.get(url, params=req, headers=headers).url)
+    #open('page.html', 'a',encoding='UTF-8').write(res.text)
     return res.text
 
 
