@@ -31,8 +31,11 @@ Pre-Setup (Only need to do these once.):
 3.  choices	from the option 
 
 for Linux user:
-you need to prepare wine32 environment
+
+you need to prepare wine32 environment:
+
 i'm not that expert in liunix system but thanks to @RGFRv2 he gave me some tips
+
 for those that don't know:
 1. connected directly as root with:
 `dpkg --add-architecture i386 && apt-get update && apt-get install wine32`
