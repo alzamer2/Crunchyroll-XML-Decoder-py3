@@ -116,7 +116,7 @@ def gethtml(url, req='', headers=''):
                    'User-Agent': 'Mozilla/5.0  Windows NT 6.1; rv:26.0 Gecko/20100101 Firefox/26.0'}
     res = session.get(url, params=req, headers=headers)
     res.encoding = 'UTF-8'
-    # print(session.get(url, params=req, headers=headers).url)
+    #print(session.get(url, params=req, headers=headers).url)
     #open('page.html', 'a',encoding='UTF-8').write(res.text)
     return res.text
 
@@ -160,10 +160,14 @@ def getxml(req, med_id):
 
 def autocatch():
     url = input(u'indicate the url : ')
-    url = ''.join(re.findall(r'(https?://www\.crunchyroll\.com/)(?:[\w-]{2,5}/)?(.+?)(?=/|$)',url)[0])
+    url = ''.join(re.findall(r'(https?://www\.crunchyroll\.com/)(?:[\w-]{2,5}/)?(.+?)(?=/|$)',url)[0])+'?skip_wall=1'
     html = gethtml(url)
     html_tree = etree.fromstring(html, etree.HTMLParser())
-    episodes_link = html_tree.xpath('//ul[@class="list-of-seasons cf"]/li/a[re:match(text(),"^(?:(?!Dub).)*$")]/../ul/li/div/a/@href',
+    if len(html_tree.xpath('//ul[@class="list-of-seasons cf"]/li')) == 1:
+        episodes_link = html_tree.xpath('//ul[@class="list-of-seasons cf"]/li/ul/li/div/a/@href',
+                                        namespaces={"re": "http://exslt.org/regular-expressions"})
+    else:
+        episodes_link = html_tree.xpath('//ul[@class="list-of-seasons cf"]/li/a[re:match(text(),"^(?:(?!Dub).)*$")]/../ul/li/div/a/@href',
                                     namespaces={"re": "http://exslt.org/regular-expressions"})
     if not os.path.exists("queue.txt"):
         take = open("queue.txt", "w")
