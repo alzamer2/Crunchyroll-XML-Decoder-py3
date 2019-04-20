@@ -1,0 +1,9 @@
+### 1.0 rev.1
+#### First stable version after exporting the code was exported from python 2
+* new way for login that dont need cfscrape
+* add progressbar to download
+* add color for console
+* use new way to get video url which include Hardsub video and 240p
+* new way to get usa sesson_id
+* add new proxy function
+* cleaned HLS code and removed extra parts, now its faster
