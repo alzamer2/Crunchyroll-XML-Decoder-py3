@@ -31,8 +31,11 @@ Pre-Setup (Only need to do these once.):
 3.  choices	from the option 
 
 for Linux user:
+
 you need to prepare wine32 environment:
+
 i'm not that expert in liunix system but thanks to @RGFRv2 he gave me some tips
+
 for those that don't know:
 1. connected directly as root with:
 `dpkg --add-architecture i386 && apt-get update && apt-get install wine32`
@@ -63,6 +66,7 @@ NOTES FROM THE AUTHORS:
 
 From the anonymous original author:
 >I did not write these programs, and I didn't even come up with this method. All I have done is created a few little bat files to bring them together. Original instructions on how this is done can be found here: 
+>
 > http://www.darkztar.com/forum/showthread.php?219034-Ripping-videos-amp-subtitles-from-Crunchyroll-%28noob-friendly%29
 
 #### What new:
