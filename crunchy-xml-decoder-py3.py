@@ -23,6 +23,8 @@ import subprocess
 sys.path.append('crunchy-xml-decoder')
 
 from external_test import testing_external_moudules_
+from updater import get_lastest_version, run_update
+code_version = get_lastest_version()
 testing_external_moudules_()
 from login import login, getuserstatus
 from altfuncs import config, autocatch,vilos_subtitle
@@ -87,7 +89,7 @@ if not os.path.lexists(os.path.join('.','settings.ini')):
 
 def idle_cmd_txt_fix(print_text):
     if 'idlelib.run' in sys.modules:
-        print_text = re.sub(r'\\x1b.*?\[\d*\w','',print_text)
+        print_text = re.sub('\\x1b.*?\[\d*\w','',print_text)
     return print_text
 
 if not os.path.lexists(os.path.join('.','cookies')):
@@ -314,7 +316,7 @@ def make_choise():
 4.- Login As Guest
 5.- Download an entire Anime(Autocatch links)
 6.- Run Queue
-    
+'''+('\n111.- '+'\x1b[31m'+'update'+ '\x1b[0m' if code_version[1] < code_version[0] else '\n')+'''
 999.- Settings
 000.- Exit'''))
         seleccion = input('> ')
@@ -348,6 +350,9 @@ def make_choise():
             queueu(os.path.join('.','queue.txt'))
         elif int(seleccion) == 6:
             queueu(os.path.join('.','queue.txt'))
+        elif int(seleccion) == 111:
+            subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe'),
+                             os.path.join(".", "crunchy-xml-decoder", "updater.py")])
         elif int(seleccion) == 999:
             settings_()
         else:

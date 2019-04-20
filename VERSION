@@ -1,3 +1,6 @@
+### 1.1 rev.2
+* add auto check for code version
+* add update option
 ### 1.0 rev.1
 #### First stable version after exporting the code was exported from python 2
 * new way for login that dont need cfscrape

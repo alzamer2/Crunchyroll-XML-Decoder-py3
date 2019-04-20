@@ -232,7 +232,7 @@ def mkv_merge(video_input,pixl,defult_lang=None):
     defult_lang_sub = ''
     for file in os.listdir(working_dir):
         if file.startswith(working_name) and file.endswith(".ass"):
-            print(re.findall(r'\]\[(.*)\]',file)[0], lang_iso[lang1], lang_iso[lang2], defult_lang_sub)
+            #print(re.findall(r'\]\[(.*)\]',file)[0], lang_iso[lang1], lang_iso[lang2], defult_lang_sub)
             if re.findall(r'\]\[(.*)\]',file)[0] == lang_iso[lang1]:
                 defult_lang_sub = re.findall(r'\]\[(.*)\]',file)[0]
             if defult_lang_sub == '':

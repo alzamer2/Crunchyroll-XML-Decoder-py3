@@ -21,7 +21,10 @@ try:
     init()
 except:
     pass
-def testing_external_moudules_():
+def testing_external_moudules_(code_version=''):
+    if code_version == '':
+        from updater import get_lastest_version
+        code_version = get_lastest_version()
     try:
         python_bit_ = re.findall("[0-9][0-9] bit", sys.version).pop()
     except:
@@ -34,6 +37,9 @@ def testing_external_moudules_():
     print(idle_cmd_txt_fix("OS Version=" + '\x1b[32m' + platform.platform().replace("-", " ") + '\x1b[0m'))
     #print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + os.environ['PROCESSOR_ARCHITECTURE'] + '\x1b[0m'))
     print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + platform.machine() + '\x1b[0m'))
+    print(idle_cmd_txt_fix("Code Version=" + '\x1b[32m' + '.'.join(code_version[1][:2]) + ' rev.'+ str(code_version[1][2]) + '\x1b[0m'+
+                           ('\x1b[32m' +' (Up-To-Date)'+ '\x1b[0m' if code_version[0] <= code_version[1] else '\x1b[31m' +' (Need to Update the Code)'+ '\x1b[0m')))
+
 
 
     pip_download_ = []
@@ -92,6 +98,12 @@ def testing_external_moudules_():
     except ImportError:
         print(idle_cmd_txt_fix('Unidecode : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing Unidecode...'))
         pip_download_.append('unidecode')
+    try:
+        import psutil
+        print(idle_cmd_txt_fix('psutil : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
+    except ImportError:
+        print(idle_cmd_txt_fix('psutil : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing psutil...'))
+        pip_download_.append('psutil')
     python_version_c = re.findall('(\d)\.(\d\.?\d?)',sys.version)[0]
     #if int(python_version_c[0]) >= 3:
     #    if float(python_version_c[1]) >= 5.3:

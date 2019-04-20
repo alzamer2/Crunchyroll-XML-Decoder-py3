@@ -8,3 +8,4 @@ beautifulsoup4
 pager
 unidecode
 wget
+psutil
