@@ -34,7 +34,7 @@ class output_offset_cls():
     printing = False
 
 def compute_total_size_part(session, output_offset, url, n):
-    with session.get(url) as response:
+    with session.head(url) as response:
         output_offset.part_size[n] = response.headers['Content-Length']
 
 def compute_total_size(video,tasks,output_offset,connection_n):

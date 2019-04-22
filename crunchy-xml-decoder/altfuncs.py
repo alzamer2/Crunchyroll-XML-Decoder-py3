@@ -176,7 +176,7 @@ def autocatch():
         take = open("queue.txt", "a")
     for link in episodes_link[::-1]:
         episode_link = 'http://www.crunchyroll.com'+re.findall(r'(\/[^\/]*?\/[^\/]*?)$',link)[0]
-        print(episode_link, file=take)
+        print(episode_link, file = take)
     take.close()
 
 

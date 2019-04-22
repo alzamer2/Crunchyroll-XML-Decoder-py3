@@ -1,3 +1,6 @@
+### 1.1 rev.3
+* fix update problem
+* add code so that video with identical names dont overwrite each other
 ### 1.1 rev.2
 * add auto check for code version
 * add update option

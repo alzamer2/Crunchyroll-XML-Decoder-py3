@@ -23,9 +23,13 @@ import subprocess
 sys.path.append('crunchy-xml-decoder')
 
 from external_test import testing_external_moudules_
-from updater import get_lastest_version, run_update
-code_version = get_lastest_version()
-testing_external_moudules_()
+try:
+    from updater import get_lastest_version
+    code_version = get_lastest_version()
+except:
+    code_version = [('0', '0', '0'), ('0', '0', '0')]
+testing_external_moudules_(code_version)
+from updater import run_update
 from login import login, getuserstatus
 from altfuncs import config, autocatch,vilos_subtitle
 from decode import decode

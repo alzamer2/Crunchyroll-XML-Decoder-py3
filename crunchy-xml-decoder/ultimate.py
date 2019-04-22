@@ -183,6 +183,7 @@ Booting up...
                                  ' - ' + clean_text(htmlconfig['metadata']['title']),
                                  '.ts'],
                                  ['True', 'True', 1, 'True',], 240)
+
     if not 'idlelib.run' in sys.modules:
         video_hls(hls_url, video_input, connection_n_)
     else:
@@ -223,6 +224,10 @@ def mkv_merge(video_input,pixl,defult_lang=None):
     working_dir = os.path.dirname(video_input)
     working_name = os.path.splitext(os.path.basename(video_input))[0]
     filename_output = os.path.join(working_dir, working_name + '[' + pixl +'].mkv')
+    exists_counter = 1
+    while os.path.lexists(filename_output):
+        filename_output = filename_output[:-4] + '(' + str(exists_counter) + ')' + filename_output[-4:]
+        exists_counter += 1
     cmd = [mkvmerge, "-o", os.path.abspath(filename_output), '--language', '0:jpn', '--language', '1:jpn',
            '-a', '1', '-d', '0', os.path.abspath(video_input), '--title', working_name]
     lang_iso = {'English': 'English (US)', u'Español' : u'Espa\xf1ol', u'Español (Espana)': u'Espa\xf1ol (Espa\xf1a)',
