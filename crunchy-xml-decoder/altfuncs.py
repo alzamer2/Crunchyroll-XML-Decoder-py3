@@ -2,10 +2,8 @@
 # -*- coding: utf-8 -*-
 import re
 import sys
-from time import sleep
 from urllib.parse import urlparse
 from configparser import ConfigParser
-import pickle
 import requests
 import cfscrape
 from lxml import etree
@@ -16,7 +14,7 @@ from urllib.request import url2pathname
 import os
 
 
-def config():
+def config_old():
     configr = ConfigParser()
     configr.read('settings.ini')
     quality = configr.get('SETTINGS', 'video_quality')
@@ -33,6 +31,26 @@ def config():
     connection_n_ = int(configr.get('SETTINGS', 'connection_n_'))
     proxy_ = configr.get('SETTINGS', 'Proxy')
     return [lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_]
+
+def config():
+    configr = ConfigParser()
+    configr.read('settings.ini')
+    config_dict = dict(configr['SETTINGS'])
+    boolean_list = ['forcesubtitle', 'forceusa', 'localizecookies', 'onlymainsub', 'dubfilter']
+    for i in boolean_list:
+        config_dict[i] = {'True': True, '1': True, 'yes': True, 'true': True, 'on': True, 'False': False, '0': False,
+                          'no': False, 'false': False, 'off': False}[config_dict[i]]
+    int_list = ['connection_n_']
+    for i in int_list:
+        config_dict[i] = int(config_dict[i])
+    langd = {'Espanol_Espana': u'Español (Espana)', 'Francais': u'Français (France)',
+             'Portugues': u'Português (Brasil)',
+             'English': u'English', 'Espanol': u'Español', 'Turkce': u'Türkçe', 'Italiano': u'Italiano',
+             'Arabic': u'العربية', 'Deutsch': u'Deutsch', 'Russian': u'Русский'}
+    language_list = ['language', 'language2']
+    for i in language_list:
+        config_dict[i] = langd[config_dict[i]]
+    return config_dict
 
 class LocalFileAdapter(requests.adapters.BaseAdapter):
     """Protocol Adapter to allow Requests to GET file:// URLs
@@ -97,16 +115,17 @@ def gethtml(url, req='', headers=''):
     cookies_.read('cookies')
     session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id')
     session.cookies['session_id'] = cookies_.get('COOKIES', 'sess_id')
-    lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
-    if forceusa:
+    #lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
+    config_ = config()
+    if config_['forceusa']:
         session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id_usa')
         session.cookies['session_id'] = cookies_.get('COOKIES', 'sess_id_usa')
     del session.cookies['c_visitor']
-    if not forceusa and localizecookies:
+    if not config_['forceusa'] and config_['localizecookies']:
         session.cookies['c_locale'] = \
         {u'Español (Espana)': 'esES', u'Français (France)': 'frFR', u'Português (Brasil)': 'ptBR',
          u'English': 'enUS', u'Español': 'esLA', u'Türkçe': 'enUS', u'Italiano': 'itIT',
-         u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский': 'ruRU'}[lang]
+         u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский': 'ruRU'}[config_['language']]
 
     if not urlparse(url).scheme and not urlparse(url).netloc:
         print('Apparently not a URL')
@@ -128,9 +147,10 @@ def getxml(req, med_id):
                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:26.0) Gecko/20100101 Firefox/26.0)'}
     qualities = {'240p': ['107', '71'], '360p': ['106', '60'], '480p': ['106', '61'],
                  '720p': ['106', '62'], '1080p': ['108', '80'], 'highest': ['0', '0']}
-    lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
-    video_format = qualities[quality][0]
-    resolution = qualities[quality][1]
+    #lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
+    config_ = config()
+    video_format = qualities[config_['video_quality']][0]
+    resolution = qualities[config_['video_quality']][1]
     if req == 'RpcApiSubtitle_GetXml':
         payload = {'req': 'RpcApiSubtitle_GetXml', 'subtitle_script_id': med_id}
         html = gethtml(url, payload, headers)
@@ -163,7 +183,7 @@ def autocatch():
     url = ''.join(re.findall(r'(https?://www\.crunchyroll\.com/)(?:[\w-]{2,5}/)?(.+?)(?=/|$)',url)[0])+'?skip_wall=1'
     html = gethtml(url)
     html_tree = etree.fromstring(html, etree.HTMLParser())
-    if len(html_tree.xpath('//ul[@class="list-of-seasons cf"]/li')) == 1:
+    if len(html_tree.xpath('//ul[@class="list-of-seasons cf"]/li')) == 1 or not config()['dubfilter']:
         episodes_link = html_tree.xpath('//ul[@class="list-of-seasons cf"]/li/ul/li/div/a/@href',
                                         namespaces={"re": "http://exslt.org/regular-expressions"})
     else:
@@ -232,7 +252,8 @@ def vilos_subtitle(page_url_='', one_sub=None):
 ------------------------------
 ---- Downloading Subtitle ----
 ------------------------------''')
-    lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
+    #lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
+    config_ = config()
     if page_url_ is '':
         page_url_ = input('Please enter Crunchyroll video URL:\n')
     if not re.findall(r'https?://www\.crunchyroll\.com/.+/.+-(\d*)', page_url_):
@@ -252,15 +273,15 @@ def vilos_subtitle(page_url_='', one_sub=None):
                 u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский': 'ruRU'}
 
     if one_sub is None:
-        one_sub = onlymainsub
+        one_sub = config_['onlymainsub']
     #avible_sub=[]
     one_sub_lang = ''
     for i in htmlconfig['subtitles']:
         #print(i["language"], Loc_lang[lang],Loc_lang[lang2],one_sub_lang)
-        if i["language"] == Loc_lang[lang]:
+        if i["language"] == Loc_lang[config_['language']]:
             one_sub_lang = i["language"]
         if one_sub_lang == '':
-            if i["language"] == Loc_lang[lang2]:
+            if i["language"] == Loc_lang[config_['language2']]:
                 one_sub_lang = i["language"]
         #avible_sub += [i["language"]]
     if one_sub_lang == '':

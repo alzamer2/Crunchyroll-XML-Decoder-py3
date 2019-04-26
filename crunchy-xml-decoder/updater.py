@@ -2,17 +2,8 @@
 # -*- coding: utf-8 -*-
 import re
 import sys
-from time import sleep
-from urllib.parse import urlparse
-from configparser import ConfigParser
-import pickle
 import requests
-import cfscrape
-from lxml import etree
-import json
-from unidecode import unidecode
 
-from urllib.request import url2pathname
 import os
 import psutil
 import wget

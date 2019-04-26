@@ -1,25 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import sys
-import errno
 import m3u8
 import urllib
-import socket
 import os
 import threading
-from time import sleep
 import math
 import time
-import subprocess
 import requests
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-#from backports.shutil_get_terminal_size import get_terminal_size
 from pager import _windows_get_window_size as get_terminal_size
 from colorama import Fore, Style, init
 from urllib.parse import urljoin,urlparse
 import codecs
-import re
 init()
 
 blocksize = 16384

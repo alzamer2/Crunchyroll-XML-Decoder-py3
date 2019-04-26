@@ -29,10 +29,8 @@ try:
 except:
     code_version = [('0', '0', '0'), ('0', '0', '0')]
 testing_external_moudules_(code_version)
-from updater import run_update
 from login import login, getuserstatus
 from altfuncs import config, autocatch,vilos_subtitle
-from decode import decode
 from ultimate import ultimate, mkv_merge
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#(CHECKING)#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -60,9 +58,10 @@ iforcesub = False
 iforceusa = False
 ilocalizecookies = False
 ionlymainsub = False
+idubfilter = True
 iconnection_n_ = 1
 iproxy_ = ''
-def defaultsettings(vvquality, vlang1, vlang2, vforcesub, vforceusa, vlocalizecookies, onlymainsub, vconnection_n_,vproxy_):
+def defaultsettings(vvquality, vlang1, vlang2, vforcesub, vforceusa, vlocalizecookies, onlymainsub, vconnection_n_,vproxy_,vdubfilter):
     dsettings='''[SETTINGS]
 # Set this to the preferred quality. Possible values are: "240p" , "360p", "480p", "720p", "1080p", or "highest" for highest available.
 # Note that any quality higher than 360p still requires premium, unless it's available that way for free (some first episodes).
@@ -81,6 +80,8 @@ forceusa = '''+str(vforceusa)+'''
 localizecookies = '''+str(vlocalizecookies)+'''
 # Set this if you only want to mux one subtitle only (this so make easy for some devices like TVs to play subtitle)
 onlymainsub='''+str(onlymainsub)+'''
+# Set this if you autocatch dub links too
+dubfilter='''+str(vdubfilter)+'''
 # Set this option to increase the Number of the connection
 connection_n_='''+str(vconnection_n_)+'''
 # Set this option to use proxy, example: US
@@ -89,7 +90,7 @@ Proxy = '''+vproxy_+'''
     open(os.path.join('.','settings.ini'), 'w', encoding='utf8').write(dsettings)
 
 if not os.path.lexists(os.path.join('.','settings.ini')):
-    defaultsettings(iquality, ilang1, ilang2, iforcesub, iforceusa, ilocalizecookies, ionlymainsub, iconnection_n_, iproxy_)
+    defaultsettings(iquality, ilang1, ilang2, iforcesub, iforceusa, ilocalizecookies, ionlymainsub, iconnection_n_, iproxy_, idubfilter)
 
 def idle_cmd_txt_fix(print_text):
     if 'idlelib.run' in sys.modules:
@@ -184,7 +185,7 @@ def Languages_(Varname_):
 
 def videoquality_():
     while True:
-        vquality = config()[5]
+        vquality = config()['video_quality']
         seleccion = 5
         try:
             print(idle_cmd_txt_fix('''Set This To The Preferred Quality:
@@ -218,7 +219,18 @@ We're Not Miracle Workers.'''))
 
 def settings_():
     while True:
-        slang1, slang2, sforcesub, sforceusa, slocalizecookies, vquality, vonlymainsub, vconnection_n_,vproxy_ = config()
+        #slang1, slang2, sforcesub, sforceusa, slocalizecookies, vquality, vonlymainsub, vconnection_n_,vproxy_ = config()
+        config_ = config()
+        slang1 = config_['language']
+        slang2 = config_['language2']
+        sforcesub = config_['forcesubtitle']
+        sforceusa = config_['forceusa']
+        slocalizecookies = config_['localizecookies']
+        vquality = config_['video_quality']
+        vonlymainsub = config_['onlymainsub']
+        vconnection_n_ = config_['connection_n_']
+        vproxy_ = config_['proxy']
+        vdubfilter = config_['dubfilter']
         slang1 = {u'Español (Espana)' : 'Espanol_Espana', u'Français (France)' : 'Francais', u'Português (Brasil)' : 'Portugues',
             u'English' : 'English', u'Español' : 'Espanol', u'Türkçe' : 'Turkce', u'Italiano' : 'Italiano',
             u'العربية' : 'Arabic', u'Deutsch' : 'Deutsch', u'Русский' : 'Russian'}[slang1]
@@ -244,9 +256,10 @@ def settings_():
 5.- USA Proxy = '''+('\x1b[32m'+str(sforceusa)+'\x1b[0m' if sforceusa else '\x1b[31m'+str(sforceusa)+'\x1b[0m')+'''			#use a US session ID
 6.- Localize cookies = '''+('\x1b[32m'+str(slocalizecookies)+'\x1b[0m' if slocalizecookies else '\x1b[31m'+str(slocalizecookies)+'\x1b[0m')+'''		#Localize the cookies (Experiment)
 7.- Only One Subtitle = '''+('\x1b[32m'+str(vonlymainsub)+'\x1b[0m' if vonlymainsub else '\x1b[31m'+str(vonlymainsub)+'\x1b[0m')+'''		#Only download Primary Language
-8.- Change the Number of The Download Connection = \x1b[32m'''+str(vconnection_n_)+'''\x1b[0m
-9.- use proxy(it disable if left blank)  = \x1b[32m'''+vproxy_+''' \x1b[0m  #ex:US
-10.- Restore Default Settings
+8.- Dub Filter = '''+('\x1b[32m'+str(vdubfilter)+'\x1b[0m' if vdubfilter else '\x1b[31m'+str(vdubfilter)+'\x1b[0m')+'''		#Ignor dub links when autocatch
+9.- Change the Number of The Download Connection = \x1b[32m'''+str(vconnection_n_)+'''\x1b[0m
+10.- use proxy(it disable if left blank)  = \x1b[32m'''+vproxy_+''' \x1b[0m  #ex:US
+11.- Restore Default Settings
 > '''))
             seleccion = int(input('> '))
         except:
@@ -254,55 +267,62 @@ def settings_():
             continue
         if seleccion == 1 :
             vquality = videoquality_()
-            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_)
+            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_, vdubfilter)
             continue
         elif seleccion == 2 :
             slang1 = Languages_('slang1')
-            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_)
+            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_, vdubfilter)
             continue
         elif seleccion == 3 :
             slang2 = Languages_('slang2')
-            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_)
+            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_, vdubfilter)
             continue
         elif seleccion == 4 :
             if sforcesub:
                 sforcesub = False
             else:
                 sforcesub = True
-            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_)
+            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_, vdubfilter)
             continue
         elif seleccion == 5 :
             if sforceusa:
                 sforceusa = False
             else:
                 sforceusa = True
-            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_)
+            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_, vdubfilter)
             continue
         elif seleccion == 6 :
             if slocalizecookies:
                 slocalizecookies = False
             else:
                 slocalizecookies = True
-            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_)
+            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_, vdubfilter)
             continue
         elif seleccion == 7 :
             if vonlymainsub:
                 vonlymainsub = False
             else:
                 vonlymainsub = True
-            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_)
+            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_, vdubfilter)
             continue
         elif seleccion == 8 :
-            vconnection_n_ = input(u'Please Input The Download Connection Nymber: ')
-            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_)
+            if vdubfilter:
+                vdubfilter = False
+            else:
+                vdubfilter = True
+            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_, vdubfilter)
             continue
         elif seleccion == 9 :
-            vproxy_ = input(u'Please Input The Proxy: ')
-            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_)
-            getuserstatus(True)
+            vconnection_n_ = input(u'Please Input The Download Connection Nymber: ')
+            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_, vdubfilter)
             continue
         elif seleccion == 10 :
-            defaultsettings(iquality, ilang1, ilang2, iforcesub, iforceusa, ilocalizecookies, ionlymainsub, iconnection_n_, iproxy_)
+            vproxy_ = input(u'Please Input The Proxy: ')
+            defaultsettings(vquality, slang1, slang2, sforcesub, sforceusa, slocalizecookies, vonlymainsub, vconnection_n_, vproxy_, vdubfilter)
+            getuserstatus(True)
+            continue
+        elif seleccion == 11 :
+            defaultsettings(iquality, ilang1, ilang2, iforcesub, iforceusa, ilocalizecookies, ionlymainsub, iconnection_n_, iproxy_, idubfilter)
             continue
         elif seleccion == 0 :
             break

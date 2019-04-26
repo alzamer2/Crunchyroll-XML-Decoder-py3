@@ -7,23 +7,15 @@ ORIGINAL SOURCE:
   http://www.darkztar.com/forum/showthread.php?219034-Ripping-videos-amp-subtitles-from-Crunchyroll-%28noob-friendly%29
 """
 
-# import lxml
 import os.path
 import re
-import shutil
 import subprocess
 import sys
-import requests
-#import HTMLParser
 
 from altfuncs import config, getxml, dircheck, gethtml, vilos_subtitle
-from bs4 import BeautifulSoup
-#from crunchyDec import CrunchyDec
 from unidecode import unidecode
-#from hls_353 import video_hls
 from hls_ import video_hls
 from configparser import ConfigParser
-from decode import decode
 import json
 import m3u8
 # ----------
@@ -73,12 +65,13 @@ Booting up...
 
     # ----------
 
-    lang1, lang2, forcesub, forceusa, localizecookies, vquality, onlymainsub, connection_n_, proxy_ = config()
+    #lang1, lang2, forcesub, forceusa, localizecookies, vquality, onlymainsub, connection_n_, proxy_ = config()
+    config_ = config()
     forcesub = False
     if sess_id_ == '':
         cookies_ = ConfigParser()
         cookies_.read('cookies')
-        if forceusa:
+        if config_['forceusa']:
             sess_id_ = cookies_.get('COOKIES', 'sess_id_usa')
         else:
             sess_id_ = cookies_.get('COOKIES', 'sess_id')
@@ -111,8 +104,8 @@ Booting up...
     Loc_lang = {u'Español (Espana)': 'esES', u'Français (France)': 'frFR', u'Português (Brasil)': 'ptBR',
             u'English': 'enUS', u'Español': 'esLA', u'Türkçe': 'trTR', u'Italiano': 'itIT',
             u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский' : 'ruRU'}
-    Loc_lang_1 = Loc_lang[lang1]
-    Loc_lang_2 = Loc_lang[lang2]
+    Loc_lang_1 = Loc_lang[config_['language']]
+    Loc_lang_2 = Loc_lang[config_['language2']]
 
     #print(Loc_lang_1,Loc_lang_2)
     if forcesub:
@@ -135,27 +128,27 @@ Booting up...
 
     # for i in hls_url_parse:
     #    print(i,hls_url_parse[i])
-    if vquality == '1080p':
+    if config_['video_quality'] == '1080p':
         try:
             hls_url = hls_url_parse[1080]
         except:
             pass
-    elif vquality == '720p':
+    elif config_['video_quality'] == '720p':
         try:
             hls_url = hls_url_parse[720]
         except:
             pass
-    elif vquality == '480p':
+    elif config_['video_quality'] == '480p':
         try:
             hls_url = hls_url_parse[480]
         except:
             pass
-    elif vquality == '360p':
+    elif config_['video_quality'] == '360p':
         try:
             hls_url = hls_url_parse[360]
         except:
             pass
-    elif vquality == '240p':
+    elif config_['video_quality'] == '240p':
         try:
             #print(hls_url_parse)
             hls_url = hls_url_parse[240]
@@ -185,7 +178,7 @@ Booting up...
                                  ['True', 'True', 1, 'True',], 240)
 
     if not 'idlelib.run' in sys.modules:
-        video_hls(hls_url, video_input, connection_n_)
+        video_hls(hls_url, video_input, config_['connection_n_'])
     else:
         if os.path.lexists(os.path.abspath(os.path.join(".","crunchy-xml-decoder", "hls.py"))):
             hls_s_path =os.path.abspath(os.path.join(".","crunchy-xml-decoder"))
@@ -200,20 +193,21 @@ import sys
 sys.path.append(r"'''+hls_s_path+'''")
 from hls import video_hls
 
-video_hls("'''+hls_url+'''", r"'''+video_input+'''", '''+str(connection_n_)+''')'''
+video_hls("'''+hls_url+'''", r"'''+video_input+'''", '''+str(config_['connection_n_'])+''')'''
         #print(hls_script)
         open(os.path.join(".","export","hls_script_temp.py"),"w",encoding='utf-8').write(hls_script)
         subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe'),os.path.join(".","export","hls_script_temp.py")])
         os.remove(os.path.join(".","export","hls_script_temp.py"))
     #decode(page_url)
     vilos_subtitle(page_url)
-    mkv_merge(video_input, vquality, 'English')
+    mkv_merge(video_input, config_['video_quality'], 'English')
 
 def mkv_merge(video_input,pixl,defult_lang=None):
     print('Starting mkv merge')
-    lang1, lang2, forcesub, forceusa, localizecookies, vquality, onlymainsub, connection_n_, proxy_ = config()
+    #lang1, lang2, forcesub, forceusa, localizecookies, vquality, onlymainsub, connection_n_, proxy_ = config()
+    config_ = config()
     if defult_lang is None:
-        defult_lang = onlymainsub
+        defult_lang = config_['onlymainsub']
     #print(os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe")))
     #print(os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe")))
     if os.path.lexists(os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe"))):
@@ -238,10 +232,10 @@ def mkv_merge(video_input,pixl,defult_lang=None):
     for file in os.listdir(working_dir):
         if file.startswith(working_name) and file.endswith(".ass"):
             #print(re.findall(r'\]\[(.*)\]',file)[0], lang_iso[lang1], lang_iso[lang2], defult_lang_sub)
-            if re.findall(r'\]\[(.*)\]',file)[0] == lang_iso[lang1]:
+            if re.findall(r'\]\[(.*)\]',file)[0] == lang_iso[config_['language']]:
                 defult_lang_sub = re.findall(r'\]\[(.*)\]',file)[0]
             if defult_lang_sub == '':
-                if re.findall(r'\]\[(.*)\]', file)[0] == lang_iso[lang2]:
+                if re.findall(r'\]\[(.*)\]', file)[0] == lang_iso[config_['language2']]:
                     defult_lang_sub = re.findall(r'\]\[(.*)\]', file)[0]
     #print(defult_lang_sub)
     for file in os.listdir(working_dir):

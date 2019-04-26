@@ -2,15 +2,12 @@
 # -*- coding: utf-8 -*-
 import sys
 import requests
-import re
 from getpass import getpass
 from configparser import ConfigParser
 import random
 import string
-from time import sleep
 from colorama import Fore, Style, init
 init()
-#import altfuncs
 from altfuncs import config
 from proxy_cr import get_proxy
 
@@ -58,8 +55,8 @@ def getuserstatus(sess_id_renew = False,sess_id_usa=''):
         payload = {'device_id': device_id, 'api_ver': '1.0',
                    'device_type': 'com.crunchyroll.crunchyroid', 'access_token': 'Scwg9PRRZ19iVwD', 'version': '2313.8',
                    'locale': 'jaJP', 'duration': '9999999999', 'auth' : auth}
-        if config()[8] != '':
-            proxy_ = get_proxy(['HTTPS'], [config()[8]])
+        if config()['proxy'] != '':
+            proxy_ = get_proxy(['HTTPS'], [config()['proxy']])
             try:
                 proxies = {'http': proxy_[0]}
             except:
@@ -102,8 +99,8 @@ def login(username, password):
     payload = {'device_id': device_id, 'api_ver': '1.0',
                'device_type': 'com.crunchyroll.crunchyroid', 'access_token': 'Scwg9PRRZ19iVwD', 'version': '2313.8',
                'locale': 'jaJP', 'duration': '9999999999'}
-    if config()[8] != '':
-        proxy_ = get_proxy(['HTTPS'], [config()[8]])
+    if config()['proxy'] != '':
+        proxy_ = get_proxy(['HTTPS'], [config()['proxy']])
         try:
             proxies = {'http': proxy_[0]}
         except:
