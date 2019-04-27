@@ -17,6 +17,7 @@ import os
 import sys
 from getpass import getpass
 import re
+import argparse
 import subprocess
 
 
@@ -403,8 +404,17 @@ def test_():
     for i in [1,2,3]:
         print(i)
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#(MAIN)#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
+#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#(MAIN)#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 if __name__ == '__main__':
-    make_choise()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-q","--queue", type=str, nargs = '?', metavar='Queue Directory', const='.\\queue.txt', help="Run List of Crunchyroll Anime Link in queue file")
+    arg = parser.parse_args()
+    
+    if arg.queue:
+        queueu(arg.queue)
+    else:
+        make_choise()
     #debug(test_)
     #print('done?')
     #input()
