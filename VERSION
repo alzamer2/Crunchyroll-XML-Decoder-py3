@@ -1,3 +1,5 @@
+### 1.2 rev.5
+* remove line for Debugging that was prevent muxing dub anime
 ### 1.2 rev.4
 * add option in settings that let use auto catch dub links
 * change config reader function to return dict instead of list to make it easier in future to add settings

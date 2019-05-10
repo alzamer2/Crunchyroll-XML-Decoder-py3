@@ -289,7 +289,7 @@ def vilos_subtitle(page_url_='', one_sub=None):
             one_sub_lang = htmlconfig['subtitles'][0]["language"]
         except IndexError:
             print('The video has hardcoded subtitles.')
-            exit()
+            #exit()
 
     for i in htmlconfig['subtitles']:
         if one_sub is True:
