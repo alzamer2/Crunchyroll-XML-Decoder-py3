@@ -67,7 +67,8 @@ Booting up...
 
     #lang1, lang2, forcesub, forceusa, localizecookies, vquality, onlymainsub, connection_n_, proxy_ = config()
     config_ = config()
-    forcesub = False
+    #print(config_)
+    forcesub = config_['forcesubtitle']
     if sess_id_ == '':
         cookies_ = ConfigParser()
         cookies_.read('cookies')
@@ -107,7 +108,7 @@ Booting up...
     Loc_lang_1 = Loc_lang[config_['language']]
     Loc_lang_2 = Loc_lang[config_['language2']]
 
-    #print(Loc_lang_1,Loc_lang_2)
+    #print(Loc_lang_1,Loc_lang_2,stream_url)
     if forcesub:
         try:
             hls_url = stream_url[Loc_lang_1]
@@ -118,7 +119,13 @@ Booting up...
                 hls_url = stream_url[None]
                 forcesub = False
     else:
-        hls_url = stream_url[None]
+        try:
+            hls_url = stream_url[None]
+        except:
+            try:
+                hls_url = stream_url['enUS']
+            except:
+                hls_url = stream_url[list(stream_url)[0]]
 
     #print(vquality)
     hls_url_m3u8 = m3u8.load(hls_url)
@@ -304,6 +311,6 @@ if __name__ == '__main__':
             # sys.exit('No season or episode numbers.')
             seasonnum, epnum = '', ''
             pass
-    #ultimate(page_url, seasonnum, epnum)
-    mkv_merge('..\\export\\The Rising of the Shield Hero - 1 - The Shield Hero.ts','480p','ara')
+    ultimate(page_url, seasonnum, epnum)
+    #mkv_merge('..\\export\\The Rising of the Shield Hero - 1 - The Shield Hero.ts','480p','ara')
     input()
