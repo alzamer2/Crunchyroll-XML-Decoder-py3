@@ -185,7 +185,9 @@ Booting up...
                                  ['True', 'True', 1, 'True',], 240)
 
     if not 'idlelib.run' in sys.modules:
-        video_hls(hls_url, video_input, config_['connection_n_'])
+        #video_hls(hls_url, video_input, config_['connection_n_'])
+        download_ = video_hls()
+        download_.video_hls(hls_url, video_input, config_['connection_n_'])
     else:
         if os.path.lexists(os.path.abspath(os.path.join(".","crunchy-xml-decoder", "hls.py"))):
             hls_s_path =os.path.abspath(os.path.join(".","crunchy-xml-decoder"))
@@ -200,7 +202,9 @@ import sys
 sys.path.append(r"'''+hls_s_path+'''")
 from hls import video_hls
 
-video_hls("'''+hls_url+'''", r"'''+video_input+'''", '''+str(config_['connection_n_'])+''')'''
+download_ = video_hls()
+download_.video_hls("'''+hls_url+'''", r"'''+video_input+'''", '''+str(config_['connection_n_'])+''')
+#video_hls("'''+hls_url+'''", r"'''+video_input+'''", '''+str(config_['connection_n_'])+''')'''
         #print(hls_script)
         open(os.path.join(".","export","hls_script_temp.py"),"w",encoding='utf-8').write(hls_script)
         subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe'),os.path.join(".","export","hls_script_temp.py")])

@@ -18,130 +18,131 @@ init()
 
 blocksize = 16384
 
-class output_offset_cls():
-    size = 0
-    offset = 0
-    part_size = {}
-    part_offset = {}
-    progress_bar_print = ['']
-    start_t = time.process_time()
-    printing = False
+class video_hls():
+    
+    def __init__(self):
+        self.size = 0
+        self.offset = 0
+        self.part_size = {}
+        self.part_offset = {}
+        self.progress_bar_print = ['']
+        self.start_t = time.process_time()
+        self.printing = False
 
-def compute_total_size_part(session, output_offset, url, n):
-    with session.head(url) as response:
-        output_offset.part_size[n] = response.headers['Content-Length']
+    def compute_total_size_part(self, url, n):
+        with self.session_size.head(url) as response:
+            self.part_size[n] = response.headers['Content-Length']
 
-def compute_total_size(video,tasks,output_offset,connection_n):
-    with requests.session() as session:
-        for n in range(len(video)-1,-1,-1):
-            finished_download_ = True
-            for i in threading.enumerate():
-                if i.name == 'download_thread_':
-                    finished_download_ = finished_download_ and not i.is_alive()
-            if finished_download_:
-                break
-            if not str(video[n].media_sequence) in output_offset.part_size:
-                compute_total_size_part(session, output_offset, video[n].absolute_uri, str(video[n].media_sequence))
-
-def download_part(session, url,output, key, media_sequence,output_offset, tasks):
-    if key.iv is not None:
-        iv = str(key.iv)[2:]
-    else:
-        iv = "%032x" % media_sequence
-    backend = default_backend()
-    decode_hex = codecs.getdecoder("hex_codec")
-    aes = Cipher(algorithms.AES(key.key_value), modes.CBC(decode_hex(iv)[0]), backend=backend)
-    decryptor = aes.decryptor()
-    output_offset.part_offset[str(media_sequence)] = 0
-    with session.get(url, stream=True) as response:
-        response.raise_for_status()
-        filename = output
-        output_offset.part_size[str(media_sequence)] = response.headers['Content-Length']
-        with open(filename, 'ab') as f_handle:
-            for chunk in response.iter_content(chunk_size=blocksize):
-                output_offset.offset += len(chunk)
-                output_offset.part_offset[str(media_sequence)] += len(chunk)
-                total_size = 0
-            
-                finished_calculating_ = True
+    def compute_total_size(self, *video):
+        with requests.session() as self.session_size:
+            for n in range(len(video)-1,-1,-1):
+                finished_download_ = True
                 for i in threading.enumerate():
-                    if i.name == 'compute_total_size_thread_':
-                        finished_calculating_ = finished_calculating_ and not i.is_alive()
-                if not finished_calculating_:
-                    output_offset.progress_bar_print[0] = progress_bar_(output_offset.offset, output_offset.offset+1, size_adj(output_offset.offset, 'harddisk'),
-                                                                        '    @ ' + str(size_adj(output_offset.offset/(time.process_time()-output_offset.start_t), 'internet')),
-                                                                        text_end_lenght=17, center_bgc='', defult_bgc='' )
-                else:
-                    for part_size in output_offset.part_size.values():
-                        total_size += int(part_size)
-                    output_offset.progress_bar_print[0] = progress_bar_(output_offset.offset,total_size,size_adj(output_offset.offset, 'harddisk')+'/'+size_adj(total_size, 'harddisk'),
-                                                                        '%'+str(round(output_offset.offset * 100 / total_size)) + ' @ ' + str(size_adj(output_offset.offset/(time.process_time()-output_offset.start_t), 'internet')),text_end_lenght=17)
-                output_offset.progress_bar_print[tasks.index(threading.currentThread())+1] = progress_bar_(output_offset.part_offset[str(media_sequence)],int(response.headers['Content-Length']),
-                                                                                             'Part#'+str(media_sequence),'%'+str(round(output_offset.part_offset[str(media_sequence)] * 100 / int(response.headers['Content-Length']),2))+' ',text_end_lenght=17)
-                if not output_offset.printing:
-                    output_offset.printing = True
-                    print('\n'.join(output_offset.progress_bar_print)+'\033[A'*len(output_offset.progress_bar_print)+'\x0d')
-                    output_offset.printing = False
-                if chunk:
-                    f_handle.write(decryptor.update(chunk))
-            decryptor.finalize()
-        return filename
+                    if i.name == 'download_thread_':
+                        finished_download_ = finished_download_ and not i.is_alive()
+                if finished_download_:
+                    break
+                if not str(video[n].media_sequence) in self.part_size:
+                    self.compute_total_size_part(video[n].absolute_uri, str(video[n].media_sequence))
 
-def download_thread(video,output,key,output_offset, tasks):
-    with requests.session() as session:
-        for n, seg in enumerate(video):
-            download_part(session, seg.absolute_uri,output, key, seg.media_sequence,output_offset, tasks)
-
-def fetch_streams(output, video, connection_n):
-    tasks = []
-    output_offset = output_offset_cls
-    
-    output_offset.size = 0
-    output_offset.offset = 0
-    output_offset.part_size = {}
-    output_offset.part_offset = {}
-    output_offset.progress_bar_print = ['']
-    output_offset.start_t = time.process_time()
-    output_offset.printing = False
-
-    for n, seg in enumerate(video.segments):
-        seg.media_sequence=video.media_sequence+n
-
-    for n, i in enumerate(range(0,len(video.segments),math.ceil(len(video.segments)/connection_n))):
-        output_offset.progress_bar_print.append('')
-        if hasattr(video, 'key'):
-            task = threading.Thread(target=download_thread,name='download_thread_',args=(video.segments[i:i+math.ceil(len(video.segments)/connection_n)],
-                                                                 output+str(n), video.key, output_offset, tasks))
+    def download_part(self, url, output, key, media_sequence, tasks):
+        if key.iv is not None:
+            iv = str(key.iv)[2:]
         else:
-            task = threading.Thread(target=download_thread,name='download_thread_',args=(video.segments[i:i+math.ceil(len(video.segments)/connection_n)],
-                                                                 output+str(n), video.keys[0], output_offset, tasks))
-        tasks.append(task)
-    for n, i in enumerate(range(0,len(video.segments),math.ceil(len(video.segments)/connection_n))):
-        task = threading.Thread(target=compute_total_size,name='compute_total_size_thread_',args=(video.segments[i:i+math.ceil(len(video.segments)/connection_n)],
-                                 tasks, output_offset,connection_n))
-        tasks.append(task)
-    for x in tasks:
-        x.start()
-    for x in tasks:
-        x.join()
+            iv = "%032x" % media_sequence
+        backend = default_backend()
+        decode_hex = codecs.getdecoder("hex_codec")
+        aes = Cipher(algorithms.AES(key.key_value), modes.CBC(decode_hex(iv)[0]), backend=backend)
+        decryptor = aes.decryptor()
+        self.part_offset[str(media_sequence)] = 0
+        with self.session.get(url, stream=True) as response:
+            response.raise_for_status()
+            filename = output
+            self.part_size[str(media_sequence)] = response.headers['Content-Length']
+            with open(filename, 'ab') as f_handle:
+                for chunk in response.iter_content(chunk_size=blocksize):
+                    self.offset += len(chunk)
+                    self.part_offset[str(media_sequence)] += len(chunk)
+                    total_size = 0
+                
+                    finished_calculating_ = True
+                    for i in threading.enumerate():
+                        if i.name == 'compute_total_size_thread_':
+                            finished_calculating_ = finished_calculating_ and not i.is_alive()
+                    if not finished_calculating_:
+                        self.progress_bar_print[0] = progress_bar_(self.offset, self.offset+1, size_adj(self.offset, 'harddisk'),
+                                                                            '    @ ' + str(size_adj(self.offset/(time.process_time()-self.start_t), 'internet')),
+                                                                            text_end_lenght=17, center_bgc='', defult_bgc='' )
+                    else:
+                        for part_size in self.part_size.values():
+                            total_size += int(part_size)
+                        self.progress_bar_print[0] = progress_bar_(self.offset,total_size,size_adj(self.offset, 'harddisk')+'/'+size_adj(total_size, 'harddisk'),
+                                                                            '%'+str(round(self.offset * 100 / total_size)) + ' @ ' + str(size_adj(self.offset/(time.process_time()-self.start_t), 'internet')),text_end_lenght=17)
+                    self.progress_bar_print[self.tasks1.index(threading.currentThread())+1] = progress_bar_(self.part_offset[str(media_sequence)],int(response.headers['Content-Length']),
+                                                                                                 'Part#'+str(media_sequence),'%'+str(round(self.part_offset[str(media_sequence)] * 100 / int(response.headers['Content-Length']),2))+' ',text_end_lenght=17)
+                    if not self.printing:
+                        self.printing = True
+                        print('\n'.join(self.progress_bar_print)+'\033[A'*len(self.progress_bar_print)+'\x0d')
+                        self.printing = False
+                    if chunk:
+                        f_handle.write(decryptor.update(chunk))
+                decryptor.finalize()
+            return filename
 
-    print('\n'*len(output_offset.progress_bar_print))
-    if connection_n==1:
-        os.rename(output+'0',output)
-    else:
-        with open(output, 'ab') as outfile:
-            for i in range (0, connection_n):
-                fname = output+str(i)
-                with open(fname, 'rb') as infile:
-                    while True:
-                        byte = infile.read(blocksize)
-                        if not byte:
-                            break
-                        outfile.write(byte)
-                os.remove(fname)
+    def download_thread(self, video, output, key):
+        with requests.session() as self.session:
+            for n, seg in enumerate(video):
+                self.download_part(seg.absolute_uri, output, key, seg.media_sequence, self.tasks1)
+
+    def fetch_streams(self):
+        self.tasks1 = []
+
+        if len(self.video.segments)/self.connection_n <2:       #fix when m2u8 parts are few
+            self.connection_n = len(range(0,len(self.video.segments),math.ceil(len(self.video.segments)/self.connection_n)))
+
+        for n, seg in enumerate(self.video.segments):
+            seg.media_sequence=self.video.media_sequence+n
+
+        for n, i in enumerate(range(0,len(self.video.segments),math.ceil(len(self.video.segments)/self.connection_n))):
+            self.progress_bar_print.append('')
+            if hasattr(self.video, 'key'):
+                task = threading.Thread(target=self.download_thread,name='download_thread_',args=(self.video.segments[i:i+math.ceil(len(self.video.segments)/self.connection_n)],
+                                                                     self.output+str(n), self.video.key))
+            else:
+                task = threading.Thread(target=self.download_thread,name='download_thread_',args=(self.video.segments[i:i+math.ceil(len(self.video.segments)/self.connection_n)],
+                                                                     self.output+str(n), self.video.keys[0]))
+            self.tasks1.append(task)
+        for n, i in enumerate(range(0,len(self.video.segments),math.ceil(len(self.video.segments)/self.connection_n))):
+            task = threading.Thread(target=self.compute_total_size,name='compute_total_size_thread_',
+                                    args=(self.video.segments[i:i+math.ceil(len(self.video.segments)/self.connection_n)]))
+            self.tasks1.append(task)
+        for x in self.tasks1:
+            x.start()
+        for x in self.tasks1:
+            x.join()
+
+        print('\n'*len(self.progress_bar_print))
+        if self.connection_n==1:
+            os.rename(self.output+'0',self.output)
+        else:
+            with open(self.output, 'ab') as outfile:
+                for i in range (0, self.connection_n):
+                    fname = self.output+str(i)
+                    with open(fname, 'rb') as infile:
+                        while True:
+                            byte = infile.read(blocksize)
+                            if not byte:
+                                break
+                            outfile.write(byte)
+                    os.remove(fname)
+
+    def video_hls(self, uri, output, connection_n):
+        self.video = find_best_video(uri)
+        self.output = output
+        self.connection_n = connection_n
+        fetch_encryption_key(self.video)
+        self.fetch_streams()
         
-    
-
 
 ##########################################################################################:---      
 ##########################################################################################:---      Functions
@@ -218,10 +219,7 @@ def find_best_video(uri):
             best_stream = stream
     return find_best_video(best_stream.absolute_uri)
 
-def video_hls(uri, output, connection_n):
-    video = find_best_video(uri)
-    fetch_encryption_key(video)
-    fetch_streams(output, video, connection_n)
+
 
 
 ##########################################################################################:---      
@@ -231,11 +229,12 @@ def video_hls(uri, output, connection_n):
 if __name__ == '__main__':
     connection_n = 1
     try:
-        #uri = sys.argv[1]
-        uri = 'https://dl.v.vrv.co/evs/2d60c0a6606424bce7772c0ddc335b08/assets/64oumlo7js44ngv_,2133009.mp4,2133025.mp4,2132993.mp4,2132977.mp4,1038943.mp4,.urlset/master.m3u8?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cCo6Ly9kbC52LnZydi5jby9ldnMvMmQ2MGMwYTY2MDY0MjRiY2U3NzcyYzBkZGMzMzViMDgvYXNzZXRzLzY0b3VtbG83anM0NG5ndl8sMjEzMzAwOS5tcDQsMjEzMzAyNS5tcDQsMjEzMjk5My5tcDQsMjEzMjk3Ny5tcDQsMTAzODk0My5tcDQsLnVybHNldC9tYXN0ZXIubTN1OCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTU1NTE4MDMyOX19fV19&Signature=U-Gm-f6fVCKgtW86WPhCiD0B9dykPkjt77XLQtjPoUh9IrmED-XHtinpkKUcGeuC4omVRDjDHod7UdUzXDM346uMGRvC2O2mQLaTPhP6w2qNk0IJu13RLf8~svomxiwTPJgBoQ-HZQ8RPFe0GMPDq2z-5E1O0XoONucT3g7i8fTwbh~DHgME-IImKbINh9tXAgT8PxQV5Fui7xNoSTBT89-KrnkCNTtomkdYQlhI8W8BiFwLbDSsNabA2WSJeYaobnwVyemSNAa5tZtrYaTx~fZ-n5BVOR~ydob~L9qMRYeiKUI472suT~CapWaJcV8COGOyz0y8PX9NgE4WiqGBOw__&Key-Pair-Id=DLVR'
+        uri = sys.argv[1]
+        #uri = 'https://dl.v.vrv.co/evs/2d60c0a6606424bce7772c0ddc335b08/assets/64oumlo7js44ngv_,2132995.mp4,2133011.mp4,2132979.mp4,2132963.mp4,1038945.mp4,.urlset/master.m3u8?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cCo6Ly9kbC52LnZydi5jby9ldnMvMmQ2MGMwYTY2MDY0MjRiY2U3NzcyYzBkZGMzMzViMDgvYXNzZXRzLzY0b3VtbG83anM0NG5ndl8sMjEzMjk5NS5tcDQsMjEzMzAxMS5tcDQsMjEzMjk3OS5tcDQsMjEzMjk2My5tcDQsMTAzODk0NS5tcDQsLnVybHNldC9tYXN0ZXIubTN1OCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTU1ODY4MzI1Nn19fV19&Signature=pNFL3u8YuKwyK3glAI2jLfvHk981ieKDWRgMPw6elxJXzvYeDt6z-~uuh7lCBpTfYAASO2gvktDhAkyEjkBTRzPnCovyoYRIdOe6iriFRZ4kNP1TcuEKnNF3JTJ1IPll748eIVxjKwHw4QS2GXhozF0DQ89s2cOcELTQa572SZCiAJczm0shOWkq0hyI8sysBSVkmv1LYWdk0ZS1bNUmOf0p5zpoKlu807KecQJH9v2LLop1CFl99ryB~37Lgp7~9tJY9imVJ23COoRJue-Dgs752Ei2ytep4yiw4dQdUmx8SOGaXzMEv~J-fXQTe9Lz8NWBHMj0dQF0ALp3MaUgyw__&Key-Pair-Id=DLVR'
     except:
-        #open('page.html','wb').write(re.findall(b'vilos\.config\.media = ({.*})',requests.get('http://www.crunchyroll.com/military/episode-1-the-mission-begins-668503').content)[0])
+        #import re;open('page.html','wb').write(re.findall(b'vilos\.config\.media = ({.*})',requests.get('http://www.crunchyroll.com/military/episode-1-the-mission-begins-668503').content)[0])
         print("invalid url")
+        exit()
     try:
         if int(sys.argv[2]):
             connection_n = int(sys.argv[2])
@@ -255,4 +254,5 @@ if __name__ == '__main__':
             if not 'output' in locals():
                 output = "download.ts"
 
-    video_hls(uri, output, connection_n)
+    download_ = video_hls()
+    download_.video_hls(uri, output, connection_n)

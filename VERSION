@@ -1,3 +1,6 @@
+### 1.2 rev.7
+* change HLS downloader to class(no idea why i did not do that befoer)
+* trying to fix when connection number is double hls parts
 ### 1.2 rev.6
 * fix when only hardsub only present
 ### 1.2 rev.5
