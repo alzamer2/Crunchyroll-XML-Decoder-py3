@@ -289,7 +289,7 @@ def mkv_merge(video_input,pixl,defult_lang=None):
 def clean_text(text_):
     ### Taken from http://stackoverflow.com/questions/6116978/python-replace-multiple-strings and improved to include the backslash###
     rep = {' / ': ' - ', '/': ' - ', ':': '-', '?': '.', '"': "''", '|': '-', '&quot;': "''", 'a*G': 'a G', '*': '#',
-           r'\u2026': '...', r' \ ': ' - '}
+           r'\u2026': '...', r' \ ': ' - ', u'”': "''"}
     rep = dict((re.escape(k), v) for k, v in rep.items())
     pattern = re.compile("|".join(rep.keys()))
     return unidecode(pattern.sub(lambda m: rep[re.escape(m.group(0))], text_))
