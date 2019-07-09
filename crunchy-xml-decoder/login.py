@@ -163,6 +163,16 @@ def create_sess_id_usa(params_v):
                 return sess_id_usa
             except:
                 pass
+        try:
+            usa_session_post = usa_session.get('http://rssfeedfilter.netne.net/').json()
+            sess_id_usa = usa_session_post['sessionId']
+        except:
+            print('\x1b[31m'+'Could Not Create USA Session'+'\x1b[0m')
+            print('\x1b[31m'+'You Will Not be Able to Download USA Locked Anime at Moment'+'\x1b[0m')
+            print('\x1b[31m'+'Try Again Later'+'\x1b[0m')
+            usa_session_post = usa_session.post('https://api.crunchyroll.com/start_session.0.json', params=params_v).json()
+            sess_id_usa = usa_session_post['data']['session_id']
+
 
     return sess_id_usa
 
