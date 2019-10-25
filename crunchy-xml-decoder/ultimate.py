@@ -18,7 +18,18 @@ from hls_ import video_hls
 from configparser import ConfigParser
 import json
 import m3u8
+import youtube_dl
 # ----------
+
+class MyLogger(object):
+    def debug(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        print(msg)
 
 def ultimate(page_url='', seasonnum=0, epnum=0, sess_id_=''):
     #global url1, url2, filen, title, media_id, lang1, lang2, hardcoded, forceusa, page_url2, onlymainsub
@@ -83,8 +94,13 @@ Booting up...
     htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})',html_page_)[0])
     htmlconfig['metadata']['series_title'] = json.loads(re.findall(r'vilos\.config\.analytics = ({.*})',html_page_)[0])['media_reporting_parent']['title']
     stream_url ={}
+    stream_url_dash = {}
     for i in htmlconfig['streams']:
-        stream_url.update({i['hardsub_lang']:i['url']})
+        if i['format'] == 'adaptive_hls':
+            stream_url.update({i['hardsub_lang']:i['url']})
+        elif i['format'] == 'adaptive_dash':
+            stream_url_dash.update({i['hardsub_lang']:i['url']})
+        #stream_url.update({i['hardsub_lang']: i['url']})
     #for i in htmlconfig['subtitles']:
     #    print(i["language"], i["url"])
     #for i in stream_url:
@@ -112,56 +128,76 @@ Booting up...
     if forcesub:
         try:
             hls_url = stream_url[Loc_lang_1]
+            dash_url = stream_url_dash[Loc_lang_1]
         except:
             try:
                 hls_url = stream_url[Loc_lang_2]
+                dash_url = stream_url_dash[Loc_lang_2]
             except:
                 hls_url = stream_url[None]
+                dash_url = stream_url_dash[None]
                 forcesub = False
     else:
         try:
             hls_url = stream_url[None]
+            dash_url = stream_url_dash[None]
         except:
             try:
                 hls_url = stream_url['enUS']
+                dash_url = stream_url_dash['enUS']
             except:
                 hls_url = stream_url[list(stream_url)[0]]
+                dash_url = stream_url_dash[list(stream_url_dash)[0]]
 
     #print(vquality)
     hls_url_m3u8 = m3u8.load(hls_url)
     hls_url_parse = {}
+    dash_id_parse = {}
     for stream in hls_url_m3u8.playlists:
         hls_url_parse.update({stream.stream_info.resolution[1]: stream.absolute_uri})
-
+    with youtube_dl.YoutubeDL({'logger': MyLogger()}) as ydl:
+        dash_info_dict = ydl.extract_info(dash_url, download=False)
+    for stream in dash_info_dict['formats']:
+        if not stream['height'] == None:
+            dash_id_parse.update({stream['height']:stream['format_id']})
+    #for i in dash_info_dict['formats']:
+    #    print(i['format_id'], i['ext'], i['height'], i['tbr'], i['asr'], i['language'], i['format_note'], i['filesize'],
+    #          i['vcodec'], i['acodec'], i['format'])
     # for i in hls_url_parse:
     #    print(i,hls_url_parse[i])
     if config_['video_quality'] == '1080p':
         try:
             hls_url = hls_url_parse[1080]
+            dash_video_id = dash_id_parse[1080]
         except:
             pass
     elif config_['video_quality'] == '720p':
         try:
             hls_url = hls_url_parse[720]
+            dash_video_id = dash_id_parse[720]
         except:
             pass
     elif config_['video_quality'] == '480p':
         try:
             hls_url = hls_url_parse[480]
+            dash_video_id = dash_id_parse[480]
         except:
             pass
     elif config_['video_quality'] == '360p':
         try:
             hls_url = hls_url_parse[360]
+            dash_video_id = dash_id_parse[360]
         except:
             pass
     elif config_['video_quality'] == '240p':
         try:
             #print(hls_url_parse)
             hls_url = hls_url_parse[240]
+            dash_video_id = dash_id_parse[240]
             #print(hls_url_parse[240])
         except:
             pass
+
 
     ### End stolen code ###
 
@@ -186,29 +222,48 @@ Booting up...
 
     if not 'idlelib.run' in sys.modules:
         #video_hls(hls_url, video_input, config_['connection_n_'])
-        download_ = video_hls()
-        download_.video_hls(hls_url, video_input, config_['connection_n_'])
+        try:
+            download_ = video_hls()
+            download_.video_hls(hls_url, video_input, config_['connection_n_'])
+        except AssertionError:
+            print('It seem there is problem in HLS stream, will use DASH stream instead')
+            with youtube_dl.YoutubeDL({'format':dash_video_id+',bestaudio','outtmpl':video_input[:-3]+'.%(ext)s'}) as ydl:
+                ydl.download([dash_url])
+            #with youtube_dl.YoutubeDL({'format':'bestaudio','outtmpl':video_input[:-3]+'.m4a'}) as ydl:
+            #    ydl.download([dash_url])
     else:
-        if os.path.lexists(os.path.abspath(os.path.join(".","crunchy-xml-decoder", "hls.py"))):
-            hls_s_path =os.path.abspath(os.path.join(".","crunchy-xml-decoder"))
-        elif os.path.lexists(os.path.abspath(os.path.join("..","crunchy-xml-decoder", "hls.py"))):
-            hls_s_path =os.path.abspath(os.path.join("..","crunchy-xml-decoder"))
+        if os.path.lexists(os.path.abspath(os.path.join(".", "crunchy-xml-decoder", "hls.py"))):
+            hls_s_path = os.path.abspath(os.path.join(".", "crunchy-xml-decoder"))
+        elif os.path.lexists(os.path.abspath(os.path.join("..", "crunchy-xml-decoder", "hls.py"))):
+            hls_s_path = os.path.abspath(os.path.join("..", "crunchy-xml-decoder"))
         else:
             print('hls script not found')
         hls_script = '''\
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 import sys
-sys.path.append(r"'''+hls_s_path+'''")
-from hls import video_hls
+sys.path.append(r"''' + hls_s_path + '''")
+from hls_ import video_hls
 
 download_ = video_hls()
-download_.video_hls("'''+hls_url+'''", r"'''+video_input+'''", '''+str(config_['connection_n_'])+''')
-#video_hls("'''+hls_url+'''", r"'''+video_input+'''", '''+str(config_['connection_n_'])+''')'''
-        #print(hls_script)
-        open(os.path.join(".","export","hls_script_temp.py"),"w",encoding='utf-8').write(hls_script)
-        subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe'),os.path.join(".","export","hls_script_temp.py")])
-        os.remove(os.path.join(".","export","hls_script_temp.py"))
+download_.video_hls("''' + hls_url + '''", r"''' + video_input + '''", ''' + str(config_['connection_n_']) + ''')
+#video_hls("''' + hls_url + '''", r"''' + video_input + '''", ''' + str(config_['connection_n_']) + ''')'''
+        # print(hls_script)
+        open(os.path.join(".", "export", "hls_script_temp.py"), "w", encoding='utf-8').write(hls_script)
+        hls_subprocess_result = subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe'),
+                                             os.path.join(".", "export", "hls_script_temp.py")])
+        if not hls_subprocess_result == 0:
+            print('It seem there is problem in HLS stream, will use DASH stream instead')
+            subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe'),
+                             '-m','youtube_dl',
+                             '-f', dash_video_id+',bestaudio',
+                             '-o', video_input[:-3]+'.%(ext)s',
+                             dash_url
+                             ])
+
+
+
+        os.remove(os.path.join(".", "export", "hls_script_temp.py"))
     #decode(page_url)
     vilos_subtitle(page_url)
     mkv_merge(video_input, config_['video_quality'], 'English')
@@ -233,8 +288,16 @@ def mkv_merge(video_input,pixl,defult_lang=None):
     while os.path.lexists(filename_output):
         filename_output = filename_output[:-4] + '(' + str(exists_counter) + ')' + filename_output[-4:]
         exists_counter += 1
-    cmd = [mkvmerge, "-o", os.path.abspath(filename_output), '--language', '0:jpn', '--language', '1:jpn',
-           '-a', '1', '-d', '0', os.path.abspath(video_input), '--title', working_name]
+    for file in os.listdir(working_dir):
+        if file.startswith(working_name) and file.endswith(".ts"):
+            cmd = [mkvmerge, "-o", os.path.abspath(filename_output), '--language', '0:jpn', '--language', '1:jpn',
+                          '-a', '1', '-d', '0', os.path.abspath(os.path.join(working_dir, file)), '--title', working_name]
+    for file in os.listdir(working_dir):
+        if file.startswith(working_name) and file.endswith(".mp4"):
+            cmd = [mkvmerge, "-o", os.path.abspath(filename_output), '--language', '0:jpn', '--language', '1:jpn',
+                          '-a', '1', '-d', '0', os.path.abspath(os.path.join(working_dir, file)), '--title', working_name]
+    #cmd = [mkvmerge, "-o", os.path.abspath(filename_output), '--language', '0:jpn', '--language', '1:jpn',
+    #       '-a', '1', '-d', '0', os.path.abspath(video_input), '--title', working_name]
     lang_iso = {'English': 'English (US)', u'Español' : u'Espa\xf1ol', u'Español (Espana)': u'Espa\xf1ol (Espa\xf1a)',
                 u'Français (France)': u'Fran\xe7ais (France)', u'Português (Brasil)': u'Portugu\xeas (Brasil)',
                 u'Italiano': 'Italiano', u'Deutsch': 'Deutsch', u'العربية': 'العربية', u'Русский': 'Русский',
@@ -250,6 +313,11 @@ def mkv_merge(video_input,pixl,defult_lang=None):
                     defult_lang_sub = re.findall(r'\]\[(.*)\]', file)[0]
     #print(defult_lang_sub)
     for file in os.listdir(working_dir):
+        if file.startswith(working_name) and file.endswith(".m4a"):
+            cmd += ['--language', '0:jpn',
+                    '--default-track', '0:yes',
+                    '--forced-track', '0:yes',
+                    os.path.abspath(os.path.join(working_dir, file))]
         if file.startswith(working_name) and file.endswith(".ass"):
             #print(os.path.abspath(os.path.join(working_dir,file)))
             cmd += ['--language', '0:' + re.findall(r'\[(.*)\]\[',file)[0],
@@ -281,9 +349,9 @@ def mkv_merge(video_input,pixl,defult_lang=None):
     #subprocess.Popen(cmd.encode('ascii', 'surrogateescape').decode('utf-8'))
     print('Merge process complete')
     print('Starting Final Cleanup')
-    os.remove(os.path.abspath(video_input))
+    #os.remove(os.path.abspath(video_input))
     for file in os.listdir(working_dir):
-        if file.startswith(working_name) and file.endswith(".ass"):
+        if file.startswith(working_name) and (file.endswith(".ass") or file.endswith(".m4a") or file.endswith(".mp4") or file.endswith(".ts")):
             os.remove(os.path.abspath(os.path.join(working_dir,file)))
     
 def clean_text(text_):

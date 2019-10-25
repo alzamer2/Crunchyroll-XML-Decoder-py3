@@ -1,3 +1,7 @@
+### 1.2 rev.10
+* merged Added -q argument #6
+* after crunchyroll added multi streams option (it seem they plan to make site suported for native apple tv os), the code is updated so it only use AES-128 hls stream (fixing issue #15)
+* add dash stream support as alternative method if hls stream download failed (no download speed up yet)
 ### 1.2 rev.9
 * add more method to get usa session (fixing issue #12)
 ### 1.2 rev.8

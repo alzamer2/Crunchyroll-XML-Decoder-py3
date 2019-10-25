@@ -81,6 +81,12 @@ def testing_external_moudules_(code_version=''):
         print(idle_cmd_txt_fix('m3u8 : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing m3u8...'))
         pip_download_.append('m3u8')
     try:
+        import youtube_dl
+        print(idle_cmd_txt_fix('youtube_dl : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
+    except ImportError:
+        print(idle_cmd_txt_fix('youtube_dl : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing m3u8...'))
+        pip_download_.append('youtube_dl')
+    try:
         from bs4 import BeautifulSoup
         print(idle_cmd_txt_fix('BeautifulSoup : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
