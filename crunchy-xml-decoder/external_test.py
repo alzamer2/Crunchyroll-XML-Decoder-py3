@@ -37,7 +37,7 @@ def testing_external_moudules_(code_version=''):
     print(idle_cmd_txt_fix("OS Version=" + '\x1b[32m' + platform.platform().replace("-", " ") + '\x1b[0m'))
     #print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + os.environ['PROCESSOR_ARCHITECTURE'] + '\x1b[0m'))
     print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + platform.machine() + '\x1b[0m'))
-    print(idle_cmd_txt_fix("Code Version=" + '\x1b[32m' + '.'.join(code_version[1][:2]) + ' rev.'+ str(code_version[1][2]) + '\x1b[0m'+
+    print(idle_cmd_txt_fix("Code Version=" + '\x1b[32m' + '.'.join([str(i) for i in code_version[1][:2]]) + ' rev.'+ str(code_version[1][2]) + '\x1b[0m'+
                            ('\x1b[32m' +' (Up-To-Date)'+ '\x1b[0m' if code_version[0] <= code_version[1] else '\x1b[31m' +' (Need to Update the Code)'+ '\x1b[0m')))
 
 

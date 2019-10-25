@@ -31,7 +31,7 @@ def get_lastest_version():
     github_version_parse = re.findall(r'(\d+)\.(\d+) rev\.(\d+)',github_version.split('\n')[0].replace('#',''))[0]
     locale_version = open(os.path.join(code_dir__,'VERSION'),'r').readlines()
     locale_version_parse = re.findall(r'(\d+)\.(\d+) rev\.(\d+)', locale_version[0].replace('#',''))[0]
-    return [github_version_parse, locale_version_parse]
+    return [tuple(int(i) for i in github_version_parse), tuple(int(i) for i in locale_version_parse)]
 
 def close_code():
     print('trying to close Crunchyroll-XML-Decoder-py3.......')

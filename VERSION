@@ -1,3 +1,5 @@
+### 1.2 rev.11
+* fix updater problem where he dont return the right lastest version
 ### 1.2 rev.10
 * merged Added -q argument #6
 * after crunchyroll added multi streams option (it seem they plan to make site suported for native apple tv os), the code is updated so it only use AES-128 hls stream (fixing issue #15)
