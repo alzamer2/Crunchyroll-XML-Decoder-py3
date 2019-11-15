@@ -98,7 +98,7 @@ init()
 #     open(os.path.join('.','settings.ini'), 'w', encoding='utf8').write(dsettings)
 
 if not os.path.lexists(os.path.join('.','settings.ini')):
-    load_config()
+    config()
     #defaultsettings(iquality, ilang1, ilang2, iforcesub, iforceusa, ilocalizecookies, ionlymainsub, iconnection_n_, iproxy_, idubfilter)
 
 def idle_cmd_txt_fix(print_text):
