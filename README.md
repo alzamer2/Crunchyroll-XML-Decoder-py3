@@ -68,6 +68,27 @@ From the anonymous original author:
 >I did not write these programs, and I didn't even come up with this method. All I have done is created a few little bat files to bring them together. Original instructions on how this is done can be found here: 
 >
 > http://www.darkztar.com/forum/showthread.php?219034-Ripping-videos-amp-subtitles-from-Crunchyroll-%28noob-friendly%29
+#### DOS Arguments Help:
+  -h, --help                    show this help message and exit
+  
+  -d URL, --download URL        Download Crunchyroll Anime Link
+  
+  -s URL, --subtitle URL        Download Crunchyroll Anime Subtitles only
+  
+  -l usename password,          Login with your Crunchyroll Account
+   --Login usename password         
+                
+  -g, --guest                   Login As Guest
+  
+  -a URL, --autocatch URL       Download an entire Anime
+  
+  -q [Queue Directory],
+  --queue [Queue Directory]     Run List of Crunchyroll Anime Link in queue file
+                        
+  -D, --default                 Restore Default Settings
+  
+  --debug                       Run Code in Debug Mode
+
 
 #### What new:
 
@@ -78,6 +99,10 @@ From the anonymous original author:
 * new way to get usa sesson_id
 * add new proxy function
 * cleaned HLS code and removed extra parts, now its faster
+* add Pretty Menu
+* add DASH stream download
+* add YoutubeDL support
+* add Dos argument
 
 #### What TO-DO:
 

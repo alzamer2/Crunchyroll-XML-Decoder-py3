@@ -126,15 +126,26 @@ class video_hls():
             os.rename(self.output+'0',self.output)
         else:
             with open(self.output, 'ab') as outfile:
-                for i in range (0, self.connection_n):
-                    fname = self.output+str(i)
-                    with open(fname, 'rb') as infile:
-                        while True:
-                            byte = infile.read(blocksize)
-                            if not byte:
-                                break
-                            outfile.write(byte)
-                    os.remove(fname)
+                for fname in os.listdir(os.path.split(self.output)[0]):
+                    if fname.startswith(os.path.split(self.output)[1]) and not fname.endswith(os.path.splitext(self.output)[1]):
+                        #print(fname)
+                        with open(os.path.join(os.path.split(self.output)[0],fname), 'rb') as infile:
+                            while True:
+                                byte = infile.read(blocksize)
+                                if not byte:
+                                    break
+                                outfile.write(byte)
+                        os.remove(os.path.join(os.path.split(self.output)[0],fname))
+
+                # for i in range (0, self.connection_n):
+                #     fname = self.output+str(i)
+                #     with open(fname, 'rb') as infile:
+                #         while True:
+                #             byte = infile.read(blocksize)
+                #             if not byte:
+                #                 break
+                #             outfile.write(byte)
+                #     os.remove(fname)
 
     def video_hls(self, uri, output, connection_n):
         self.video = find_best_video(uri)
@@ -151,6 +162,8 @@ class video_hls():
 def progress_bar_(currect,target,text_center='',text_end='%100',text_end_lenght=0,center_bgc='30;42',defult_bgc=''):
     try:
         c_width = get_terminal_size()[0]
+        if c_width ==0:
+            c_width = 60
     except:
         c_width = 60
     if text_end_lenght == 0 : text_end_lenght = len(text_end)

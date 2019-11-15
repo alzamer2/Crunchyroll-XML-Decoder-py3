@@ -13,6 +13,17 @@ from unidecode import unidecode
 from urllib.request import url2pathname
 import os
 
+from requests.adapters import BaseAdapter
+from requests.compat import urlparse, unquote
+from requests import Response, codes
+import errno
+import os
+import stat
+import locale
+import io
+
+#from six import BytesIO
+from io import BytesIO
 
 def config_old():
     configr = ConfigParser()
@@ -32,7 +43,7 @@ def config_old():
     proxy_ = configr.get('SETTINGS', 'Proxy')
     return [lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_]
 
-def config():
+def config_old2():
     configr = ConfigParser()
     configr.read('settings.ini')
     config_dict = dict(configr['SETTINGS'])
@@ -50,6 +61,81 @@ def config():
     language_list = ['language', 'language2']
     for i in language_list:
         config_dict[i] = langd[config_dict[i]]
+    return config_dict
+
+def config(defult=False, **kwargs):
+    dsettings = {
+        'video_quality' : 'highest',
+        'language' : 'English',
+        'language2' : 'English',
+        'forcesubtitle' : 'False',
+        'forceusa' : 'False',
+        'localizecookies' : 'False',
+        'onlymainsub' : 'False',
+        'dubfilter' : 'True',
+        'connection_n_' : '1',
+        'proxy' : ''
+        }
+    def set_with_comment(ConfigParser_obj, section, name, value='',comment=''):
+        ConfigParser_obj.remove_option(section, name)
+        if comment == '':
+            ConfigParser_obj.set(section, name, value)
+        else:
+            ConfigParser_obj.set(section, '#'+comment+'\n'+name, str(value))
+
+    comments = {
+        'video_quality' : ''' Set this to the preferred quality. Possible values are: "240p" , "360p", "480p", "720p", "1080p", or "highest" for highest available.
+# Note that any quality higher than 360p still requires premium, unless it's available that way for free (some first episodes).
+# We're not miracle workers.''',
+        'language' : ''' Set this to the desired subtitle language. If the subtitles aren't available in that language, it reverts to the second language option (below).
+# Available languages: English, Espanol, Espanol_Espana, Francais, Portugues, Turkce, Italiano, Arabic, Deutsch''',
+        'language2' : ''' If the first language isn't available, what language would you like as a backup? Only if then they aren't found, then it goes to English as default''',
+        'forcesubtitle' : ''' Set this if you want to use --forced-track rather than --default-track for subtitle''',
+        'forceusa' : ''' Set this if you want to use a US session ID''',
+        'localizecookies' : ''' Set this if you want to Localize the cookies (this option is under testing and may generate some problem and it willnot work with -forceusa- option)''',
+        'onlymainsub' : ''' Set this if you only want to mux one subtitle only (this so make easy for some devices like TVs to play subtitle)''',
+        'dubfilter' : ''' Set this if you autocatch dub links too''',
+        'connection_n_' : ''' Set this option to increase the Number of the connection''',
+        'proxy' : ''' Set this option to use proxy, example: US'''
+        }
+    configr = ConfigParser()
+    if os.path.lexists(os.path.join('.','settings.ini')) and not defult:
+        configr.read('settings.ini')
+    else:
+        configr.add_section('SETTINGS')
+        for opt in dsettings:
+            configr.set('SETTINGS', opt, dsettings[opt])
+    config_dict ={}
+    for opt in configr.options('SETTINGS'):
+        config_dict[opt]=configr.get('SETTINGS', opt)
+    boolean_list = ['forcesubtitle', 'forceusa', 'localizecookies', 'onlymainsub', 'dubfilter']
+    for i in boolean_list:
+        config_dict[i] = {'True': True, '1': True, 'yes': True, 'true': True, 'on': True, 'False': False, '0': False,
+                               'no': False, 'false': False, 'off': False}[config_dict[i]]
+    int_list = ['connection_n_']
+    for i in int_list:
+        config_dict[i] = int(config_dict[i])
+    langd = {'Espanol_Espana': u'Español (Espana)', 'Francais': u'Français (France)',
+             'Portugues': u'Português (Brasil)',
+             'English': u'English', 'Espanol': u'Español', 'Turkce': u'Türkçe', 'Italiano': u'Italiano',
+             'Arabic': u'العربية', 'Deutsch': u'Deutsch', 'Russian': u'Русский'}
+    config_dict['language']=langd[config_dict['language']]
+    config_dict['language2'] = langd[config_dict['language2']]
+    for kwargs_key in kwargs:
+        if kwargs_key in boolean_list:
+            if kwargs[kwargs_key].lower() == 'toggle'.lower():
+                kwargs[kwargs_key] = not config_dict[kwargs_key]
+        
+    config_dict.update(kwargs)
+    #print(config_dict)
+    config_dict_out = dict(config_dict)
+    config_dict_out['language'] = {v: k for k, v in langd.items()}[config_dict_out['language']]
+    config_dict_out['language2'] = {v: k for k, v in langd.items()}[config_dict_out['language2']]
+    #print(config_dict)
+    for opt in config_dict_out:
+        set_with_comment(configr,'SETTINGS', opt, config_dict_out[opt],comments[opt])
+    with open('settings.ini', 'w') as configfile:
+        configr.write(configfile)
     return config_dict
 
 class LocalFileAdapter(requests.adapters.BaseAdapter):
@@ -102,6 +188,107 @@ class LocalFileAdapter(requests.adapters.BaseAdapter):
         response.connection = self
 
         return response
+
+    def close(self) -> object:
+        pass
+
+
+
+class FileAdapter(BaseAdapter):
+    def send(self, request, **kwargs):
+        """ Wraps a file, described in request, in a Response object.
+            :param request: The PreparedRequest` being "sent".
+            :returns: a Response object containing the file
+        """
+
+        # Check that the method makes sense. Only support GET
+        if request.method not in ("GET", "HEAD"):
+            raise ValueError("Invalid request method %s" % request.method)
+
+        # Parse the URL
+        url_parts = urlparse(request.url)
+
+        # Reject URLs with a hostname component
+        if url_parts.netloc and url_parts.netloc != "localhost":
+            raise ValueError("file: URLs with hostname components are not permitted")
+
+        resp = Response()
+
+        # Open the file, translate certain errors into HTTP responses
+        # Use urllib's unquote to translate percent escapes into whatever
+        # they actually need to be
+        try:
+            # Split the path on / (the URL directory separator) and decode any
+            # % escapes in the parts
+            path_parts = [unquote(p) for p in url_parts.path.split('/')]
+
+            # Strip out the leading empty parts created from the leading /'s
+            while path_parts and not path_parts[0]:
+                path_parts.pop(0)
+
+            # If os.sep is in any of the parts, someone fed us some shenanigans.
+            # Treat is like a missing file.
+            if any(os.sep in p for p in path_parts):
+                raise IOError(errno.ENOENT, os.strerror(errno.ENOENT))
+
+            # Look for a drive component. If one is present, store it separately
+            # so that a directory separator can correctly be added to the real
+            # path, and remove any empty path parts between the drive and the path.
+            # Assume that a part ending with : or | (legacy) is a drive.
+            if path_parts and (path_parts[0].endswith('|') or
+                               path_parts[0].endswith(':')):
+                path_drive = path_parts.pop(0)
+                if path_drive.endswith('|'):
+                    path_drive = path_drive[:-1] + ':'
+
+                while path_parts and not path_parts[0]:
+                    path_parts.pop(0)
+            else:
+                path_drive = ''
+
+            # Try to put the path back together
+            # Join the drive back in, and stick os.sep in front of the path to
+            # make it absolute.
+            path = path_drive + os.sep + os.path.join(*path_parts)
+
+            # Check if the drive assumptions above were correct. If path_drive
+            # is set, and os.path.splitdrive does not return a drive, it wasn't
+            # reall a drive. Put the path together again treating path_drive
+            # as a normal path component.
+            if path_drive and not os.path.splitdrive(path):
+                path = os.sep + os.path.join(path_drive, *path_parts)
+
+            # Use io.open since we need to add a release_conn method, and
+            # methods can't be added to file objects in python 2.
+            resp.raw = io.open(path, "rb")
+            resp.raw.release_conn = resp.raw.close
+        except IOError as e:
+            if e.errno == errno.EACCES:
+                resp.status_code = codes.forbidden
+            elif e.errno == errno.ENOENT:
+                resp.status_code = codes.not_found
+            else:
+                resp.status_code = codes.bad_request
+
+            # Wrap the error message in a file-like object
+            # The error message will be localized, try to convert the string
+            # representation of the exception into a byte stream
+            resp_str = str(e).encode(locale.getpreferredencoding(False))
+            resp.raw = BytesIO(resp_str)
+            resp.headers['Content-Length'] = len(resp_str)
+
+            # Add release_conn to the BytesIO object
+            resp.raw.release_conn = resp.raw.close
+        else:
+            resp.status_code = codes.ok
+            resp.url = request.url
+
+            # If it's a regular file, set the Content-Length
+            resp_stat = os.fstat(resp.raw.fileno())
+            if stat.S_ISREG(resp_stat.st_mode):
+                resp.headers['Content-Length'] = resp_stat.st_size
+
+        return resp
 
     def close(self):
         pass
@@ -178,8 +365,9 @@ def getxml(req, med_id):
         return xml_
 
 
-def autocatch():
-    url = input(u'indicate the url : ')
+def autocatch(url=None):
+    if url:
+        url = input(u'indicate the url : ')
     url = ''.join(re.findall(r'(https?://www\.crunchyroll\.com/)(?:[\w-]{2,5}/)?(.+?)(?=/|$)',url)[0])+'?skip_wall=1'
     html = gethtml(url)
     html_tree = etree.fromstring(html, etree.HTMLParser())
@@ -276,8 +464,10 @@ def vilos_subtitle(page_url_='', one_sub=None):
         one_sub = config_['onlymainsub']
     #avible_sub=[]
     one_sub_lang = ''
+    #print(config_)
     for i in htmlconfig['subtitles']:
-        #print(i["language"], Loc_lang[lang],Loc_lang[lang2],one_sub_lang)
+        # print(i["language"], config_['language'], config_['language2'], one_sub_lang)
+        # print(i["language"], Loc_lang[config_['language']],Loc_lang[config_['language2']],one_sub_lang)
         if i["language"] == Loc_lang[config_['language']]:
             one_sub_lang = i["language"]
         if one_sub_lang == '':

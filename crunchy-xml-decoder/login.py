@@ -144,6 +144,7 @@ auth = ''' + auth + '''
 '''
         # open("cookies", "w").write('[COOKIES]\nsess_id = '+sess_id_+'\nsess_id_usa = '+sess_id_usa+'\nauth = '+auth)
     open("cookies", "w").write(cookies_out)
+    return userstatus
 
 def create_sess_id_usa(params_v):
     usa_session = requests.session()

@@ -84,7 +84,7 @@ def testing_external_moudules_(code_version=''):
         import youtube_dl
         print(idle_cmd_txt_fix('youtube_dl : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        print(idle_cmd_txt_fix('youtube_dl : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing m3u8...'))
+        print(idle_cmd_txt_fix('youtube_dl : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing youtube_dl...'))
         pip_download_.append('youtube_dl')
     try:
         from bs4 import BeautifulSoup

@@ -1,3 +1,9 @@
+### 1.3 rev.12
+* add new class to generate classy menu which will help in editing and adding new function, you can still use crunchy-xml-decoder-py3_old to load old menu
+* add new class for Dash stream, now it can be download faster, will add option later that will let you choice which to use as preferred download option
+* add DEBUG mode that dump alot of data, can be helpfull if the code begin to go crazy
+* add multi argparse argument that can be used from dos like '-d URL'
+* minor fix
 ### 1.2 rev.11
 * fix updater problem where he dont return the right lastest version
 ### 1.2 rev.10

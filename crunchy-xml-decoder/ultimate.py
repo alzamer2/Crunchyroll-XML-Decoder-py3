@@ -15,6 +15,7 @@ import sys
 from altfuncs import config, getxml, dircheck, gethtml, vilos_subtitle
 from unidecode import unidecode
 from hls_ import video_hls
+from Dash import dash_download
 from configparser import ConfigParser
 import json
 import m3u8
@@ -149,52 +150,35 @@ Booting up...
                 hls_url = stream_url[list(stream_url)[0]]
                 dash_url = stream_url_dash[list(stream_url_dash)[0]]
 
-    #print(vquality)
+    #print(dash_url)
     hls_url_m3u8 = m3u8.load(hls_url)
     hls_url_parse = {}
     dash_id_parse = {}
     for stream in hls_url_m3u8.playlists:
         hls_url_parse.update({stream.stream_info.resolution[1]: stream.absolute_uri})
-    with youtube_dl.YoutubeDL({'logger': MyLogger()}) as ydl:
-        dash_info_dict = ydl.extract_info(dash_url, download=False)
-    for stream in dash_info_dict['formats']:
-        if not stream['height'] == None:
-            dash_id_parse.update({stream['height']:stream['format_id']})
-    #for i in dash_info_dict['formats']:
-    #    print(i['format_id'], i['ext'], i['height'], i['tbr'], i['asr'], i['language'], i['format_note'], i['filesize'],
-    #          i['vcodec'], i['acodec'], i['format'])
-    # for i in hls_url_parse:
-    #    print(i,hls_url_parse[i])
     if config_['video_quality'] == '1080p':
         try:
             hls_url = hls_url_parse[1080]
-            dash_video_id = dash_id_parse[1080]
         except:
             pass
     elif config_['video_quality'] == '720p':
         try:
             hls_url = hls_url_parse[720]
-            dash_video_id = dash_id_parse[720]
         except:
             pass
     elif config_['video_quality'] == '480p':
         try:
             hls_url = hls_url_parse[480]
-            dash_video_id = dash_id_parse[480]
         except:
             pass
     elif config_['video_quality'] == '360p':
         try:
             hls_url = hls_url_parse[360]
-            dash_video_id = dash_id_parse[360]
         except:
             pass
     elif config_['video_quality'] == '240p':
         try:
-            #print(hls_url_parse)
             hls_url = hls_url_parse[240]
-            dash_video_id = dash_id_parse[240]
-            #print(hls_url_parse[240])
         except:
             pass
 
@@ -223,14 +207,57 @@ Booting up...
     if not 'idlelib.run' in sys.modules:
         #video_hls(hls_url, video_input, config_['connection_n_'])
         try:
+            #assert 1==2
             download_ = video_hls()
             download_.video_hls(hls_url, video_input, config_['connection_n_'])
         except AssertionError:
-            print('It seem there is problem in HLS stream, will use DASH stream instead')
-            with youtube_dl.YoutubeDL({'format':dash_video_id+',bestaudio','outtmpl':video_input[:-3]+'.%(ext)s'}) as ydl:
-                ydl.download([dash_url])
-            #with youtube_dl.YoutubeDL({'format':'bestaudio','outtmpl':video_input[:-3]+'.m4a'}) as ydl:
-            #    ydl.download([dash_url])
+            try:
+                print('It seem there is problem in HLS stream, will use DASH stream instead')
+                #assert 1==2
+                download_ = dash_download()
+                # print(config_['connection_n_'],config_['video_quality'])
+                download_.download(dash_url, video_input, config_['connection_n_'], r=config_['video_quality'], abr='best')
+            except:
+                print('It seem there is problem in DASH stream, will use External Library YoutubeDL instead')
+                with youtube_dl.YoutubeDL({'logger': MyLogger()}) as ydl:
+                    dash_info_dict = ydl.extract_info(dash_url, download=False)
+                for stream in dash_info_dict['formats']:
+                    if not stream['height'] == None:
+                        dash_id_parse.update({stream['height']: stream['format_id']})
+                # for i in dash_info_dict['formats']:
+                #    print(i['format_id'], i['ext'], i['height'], i['tbr'], i['asr'], i['language'], i['format_note'], i['filesize'],
+                #          i['vcodec'], i['acodec'], i['format'])
+                # for i in hls_url_parse:
+                #    print(i,hls_url_parse[i])
+                if config_['video_quality'] == '1080p':
+                    try:
+                        dash_video_id = dash_id_parse[1080]
+                    except:
+                        pass
+                elif config_['video_quality'] == '720p':
+                    try:
+                        dash_video_id = dash_id_parse[720]
+                    except:
+                        pass
+                elif config_['video_quality'] == '480p':
+                    try:
+                        dash_video_id = dash_id_parse[480]
+                    except:
+                        pass
+                elif config_['video_quality'] == '360p':
+                    try:
+                        dash_video_id = dash_id_parse[360]
+                    except:
+                        pass
+                elif config_['video_quality'] == '240p':
+                    try:
+                        dash_video_id = dash_id_parse[240]
+                    except:
+                        pass
+                with youtube_dl.YoutubeDL(
+                        {'format': dash_video_id + ',bestaudio', 'outtmpl': video_input[:-3] + '.%(ext)s'}) as ydl:
+                    ydl.download([dash_url])
+
     else:
         if os.path.lexists(os.path.abspath(os.path.join(".", "crunchy-xml-decoder", "hls.py"))):
             hls_s_path = os.path.abspath(os.path.join(".", "crunchy-xml-decoder"))

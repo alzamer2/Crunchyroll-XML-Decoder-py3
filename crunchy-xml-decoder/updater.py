@@ -78,4 +78,4 @@ def run_update():
 
 if __name__ == '__main__':
     run_update()
-    #print(get_lastest_version()[0][:2])
+    #print('%s.%s.%s' % get_lastest_version()[0])
