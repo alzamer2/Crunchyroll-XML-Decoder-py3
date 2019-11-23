@@ -204,6 +204,116 @@ Booting up...
                                  '.ts'],
                                  ['True', 'True', 1, 'True',], 240)
 
+    download_subprocess_result = 0
+    try:
+        # assert 1==2
+        download_ = video_hls()
+        download_subprocess_result = download_.video_hls(hls_url, video_input, config_['connection_n_'])
+    except AssertionError:
+        download_subprocess_result = 1
+
+    if download_subprocess_result != 0:
+        try:
+            print('It seem there is problem in HLS stream, will use DASH stream instead')
+            # assert 1==2
+            download_ = dash_download()
+            # print(config_['connection_n_'],config_['video_quality'])
+            download_subprocess_result = download_.download(dash_url, video_input, config_['connection_n_'], r=config_['video_quality'], abr='best')
+        except:
+            download_subprocess_result = 1
+
+    if download_subprocess_result != 0:
+        print('It seem there is problem in DASH stream, will use External Library YoutubeDL instead')
+        with youtube_dl.YoutubeDL({'logger': MyLogger()}) as ydl:
+            dash_info_dict = ydl.extract_info(dash_url, download=False)
+        for stream in dash_info_dict['formats']:
+            if not stream['height'] == None:
+                dash_id_parse.update({stream['height']: stream['format_id']})
+        # for i in dash_info_dict['formats']:
+        #    print(i['format_id'], i['ext'], i['height'], i['tbr'], i['asr'], i['language'], i['format_note'], i['filesize'],
+        #          i['vcodec'], i['acodec'], i['format'])
+        # for i in hls_url_parse:
+        #    print(i,hls_url_parse[i])
+        if config_['video_quality'] == '1080p':
+            try:
+                dash_video_id = dash_id_parse[1080]
+            except:
+                pass
+        elif config_['video_quality'] == '720p':
+            try:
+                dash_video_id = dash_id_parse[720]
+            except:
+                pass
+        elif config_['video_quality'] == '480p':
+            try:
+                dash_video_id = dash_id_parse[480]
+            except:
+                pass
+        elif config_['video_quality'] == '360p':
+            try:
+                dash_video_id = dash_id_parse[360]
+            except:
+                pass
+        elif config_['video_quality'] == '240p':
+            try:
+                dash_video_id = dash_id_parse[240]
+            except:
+                pass
+        def youtube_dl_proxy(*args, **kwargs):
+            import sys
+            if 'idlelib.run' in sys.modules:  # code to force this script to only run in console
+                try:
+                    import run_code_with_console
+                    return run_code_with_console.run_code_with_console()
+                except:
+                    pass  # end of code to force this script to only run in console
+            return youtube_dl.YoutubeDL(*args, **kwargs)
+            pass
+
+        # youtube_dl_proxy({'format': dash_video_id + ',bestaudio',
+        #                    'outtmpl': video_input[:-3] + '.%(ext)s'}).download([dash_url])
+
+        if not 'idlelib.run' in sys.modules:
+            with youtube_dl.YoutubeDL(
+                    {'format': dash_video_id + ',bestaudio', 'outtmpl': video_input[:-3] + '.%(ext)s'}) as ydl:
+                ydl.download([dash_url])
+        else:
+            youtube_dl_script='''\
+import youtube_dl
+with youtube_dl.YoutubeDL(
+                {'format': \''''+dash_video_id+''',bestaudio', 'outtmpl': r\''''+video_input[:-3]+'''\' + '.%(ext)s'}) as ydl:
+                ydl.download([\'\'\''''+dash_url+'''\'\'\'])
+'''
+            #print(youtube_dl_script)
+            command = 'where'  # Windows
+            if os.name != "nt":  # non-Windows
+                command = 'which'
+            python_path_ = os.path.normpath(
+                os.path.join(os.path.split(subprocess.getoutput([command, 'pip3']))[0], '..', 'python.exe'))
+            try:
+                subprocess.call([python_path_, '-c', youtube_dl_script])
+            except FileNotFoundError:  # fix for old version windows that dont have 'where' command
+                reg_ = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Python\PythonCore')
+                python_request_v = [3, 0]
+                if len(python_request_v) > 0:
+                    if len(python_request_v) < 2:
+                        python_request_v += [0]
+                    python_request_v = python_request_v[0] + python_request_v[1] / 10
+                else:
+                    python_request_v = 0.0
+                for reg_i in range(0, winreg.QueryInfoKey(reg_)[0]):
+                    reg_2 = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Python\PythonCore')
+                    if float(winreg.EnumKey(reg_2, reg_i)) >= python_request_v and \
+                       True if python_request_v == 0.0 else float(winreg.EnumKey(reg_2, reg_i)) < float(
+                        round(python_request_v) + 1):
+                        reg_2 = winreg.OpenKey(reg_2, winreg.EnumKey(reg_2, reg_i))
+                        reg_2 = winreg.OpenKey(reg_2, r'PythonPath')
+                        python_path_ = os.path.normpath(
+                            os.path.join(winreg.EnumValue(reg_2, 0)[1].split(';')[0], '..', 'python.exe'))
+                subprocess.call([python_path_, '-c', youtube_dl_script])
+
+
+    """
     if not 'idlelib.run' in sys.modules:
         #video_hls(hls_url, video_input, config_['connection_n_'])
         try:
@@ -291,6 +401,7 @@ download_.video_hls("''' + hls_url + '''", r"''' + video_input + '''", ''' + str
 
 
         os.remove(os.path.join(".", "export", "hls_script_temp.py"))
+    """
     #decode(page_url)
     vilos_subtitle(page_url)
     mkv_merge(video_input, config_['video_quality'], 'English')

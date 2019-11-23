@@ -516,7 +516,7 @@ def vilos_subtitle(page_url_='', one_sub=None):
 
 def idle_cmd_txt_fix(print_text):
     if 'idlelib.run' in sys.modules:
-        print_text = re.sub(r'\\x1b.*?\[\d*\w','',print_text)
+        print_text = re.sub(r'\x1b.*?\[\d*\w','',print_text)
     return print_text
 
 def clean_text(text_):

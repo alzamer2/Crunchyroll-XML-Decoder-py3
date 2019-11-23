@@ -438,6 +438,13 @@ class dash_download:
                                 outfile.write(byte)
 
     def download(self, url=None, output=None, connection_n=1, video=True, audio=True, **kwargs):
+        import sys
+        if 'idlelib.run' in sys.modules: #code to force this script to only run in console
+            try:
+                import run_code_with_console
+                return run_code_with_console.run_code_with_console()
+            except:
+                pass                     #end of code to force this script to only run in console
         print()
         if url is None:
             url = input('dashlink>>')
@@ -454,6 +461,7 @@ class dash_download:
             self.dash_stream_id[1] = ''
         self.buildup_st_urls()
         self.download_streams(video=video, audio=audio)
+        return 0
 
 ##########################################################################################:---
 ##########################################################################################:---      Functions

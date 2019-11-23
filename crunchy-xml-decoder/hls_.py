@@ -148,11 +148,19 @@ class video_hls():
                 #     os.remove(fname)
 
     def video_hls(self, uri, output, connection_n):
+        import sys
+        if 'idlelib.run' in sys.modules: #code to force this script to only run in console
+            try:
+                import run_code_with_console
+                return run_code_with_console.run_code_with_console()
+            except:
+                pass                     #end of code to force this script to only run in console
         self.video = find_best_video(uri)
         self.output = output
         self.connection_n = connection_n
         fetch_encryption_key(self.video)
         self.fetch_streams()
+        return 0
         
 
 ##########################################################################################:---      
