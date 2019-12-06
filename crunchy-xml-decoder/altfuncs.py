@@ -366,7 +366,7 @@ def getxml(req, med_id):
 
 
 def autocatch(url=None):
-    if url:
+    if url is None:
         url = input(u'indicate the url : ')
     url = ''.join(re.findall(r'(https?://www\.crunchyroll\.com/)(?:[\w-]{2,5}/)?(.+?)(?=/|$)',url)[0])+'?skip_wall=1'
     html = gethtml(url)
