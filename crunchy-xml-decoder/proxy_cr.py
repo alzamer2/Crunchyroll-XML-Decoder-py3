@@ -63,4 +63,4 @@ def get_proxy(types_,countries_):
 
 
 if __name__ == '__main__':
-    print(get_proxy(['HTTPS'],['VE']))
+    print(get_proxy(['HTTPS'],['US']))

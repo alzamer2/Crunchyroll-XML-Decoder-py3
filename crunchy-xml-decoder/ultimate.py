@@ -96,6 +96,7 @@ Booting up...
     htmlconfig['metadata']['series_title'] = json.loads(re.findall(r'vilos\.config\.analytics = ({.*})',html_page_)[0])['media_reporting_parent']['title']
     stream_url ={}
     stream_url_dash = {}
+    # print(htmlconfig)
     for i in htmlconfig['streams']:
         if i['format'] == 'adaptive_hls':
             stream_url.update({i['hardsub_lang']:i['url']})
@@ -139,6 +140,7 @@ Booting up...
                 dash_url = stream_url_dash[None]
                 forcesub = False
     else:
+        # print(stream_url)
         try:
             hls_url = stream_url[None]
             dash_url = stream_url_dash[None]

@@ -66,6 +66,7 @@ def getuserstatus(sess_id_renew = False,sess_id_usa=''):
         sess_id_usa = create_sess_id_usa(payload_usa)
         try:
             checkusaid2 = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload).json()
+            # print(session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload).url)
         except requests.exceptions.ProxyError:
             checkusaid2 = session.post('http://api.crunchyroll.com/start_session.0.json', params=payload).json()
         sess_id_ = checkusaid2['data']['session_id']
@@ -149,18 +150,21 @@ auth = ''' + auth + '''
 def create_sess_id_usa(params_v):
     usa_session = requests.session()
     sess_id_usa = ''
-    usa_session_post = usa_session.post('http://api-manga.crunchyroll.com/cr_start_session', params=params_v)
+    # usa_session_post = usa_session.post('http://api-manga.crunchyroll.com/cr_start_session', params=params_v)
     #print(usa_session_post.url)
-    if usa_session_post.json()['error'] != "true":
-        # print(usa_session_post.json())
-        sess_id_usa = usa_session_post.json()['data']['session_id']
+    # if usa_session_post.json()['error'] != "true":
+    #     # print(usa_session_post.json())
+    #     sess_id_usa = usa_session_post.json()['data']['session_id']
     if sess_id_usa=='':
         for prxy_ in get_proxy(['HTTPS'],['US']):
             proxies = {'https': prxy_}
-            #print(proxies)
+            # print(proxies)
             try:
                 usa_session_post = usa_session.post('https://api.crunchyroll.com/start_session.0.json', proxies=proxies,
                                                     params=params_v).json()
+                # print(usa_session.post('https://api.crunchyroll.com/start_session.0.json', proxies=proxies,
+                #                                     params=params_v).url)
+                # print(usa_session_post)
                 sess_id_usa = usa_session_post['data']['session_id']
                 return sess_id_usa
             except:
