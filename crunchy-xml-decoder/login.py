@@ -11,6 +11,9 @@ init()
 from altfuncs import config
 from proxy_cr import get_proxy
 
+import urllib.parse
+from requests import Session, Request
+
 
 
     
@@ -151,10 +154,21 @@ def create_sess_id_usa(params_v):
     usa_session = requests.session()
     sess_id_usa = ''
     # usa_session_post = usa_session.post('http://api-manga.crunchyroll.com/cr_start_session', params=params_v)
-    #print(usa_session_post.url)
+    # print(usa_session_post.url)
     # if usa_session_post.json()['error'] != "true":
     #     # print(usa_session_post.json())
     #     sess_id_usa = usa_session_post.json()['data']['session_id']
+    p_usa_session_post = Request('POST', 'http://api-manga.crunchyroll.com/cr_start_session', params=params_v).prepare()
+    encoded_usa_session_post_url = urllib.parse.quote(p_usa_session_post.url, safe='')
+    google_p_params = {'container' : 'focus', 'url' : p_usa_session_post.url}
+    usa_session_post = usa_session.post('https://images-focus-opensocial.googleusercontent.com/gadgets/proxy', params=google_p_params)
+    # print(usa_session_post, usa_session_post.url)
+    # print(usa_session_post.json())
+    if usa_session_post.json()['error'] != "true":
+         # print(usa_session_post.json())
+         sess_id_usa = usa_session_post.json()['data']['session_id']
+    # print(sess_id_usa)
+    # input()
     if sess_id_usa=='':
         for prxy_ in get_proxy(['HTTPS'],['US']):
             proxies = {'https': prxy_}
@@ -182,14 +196,31 @@ def create_sess_id_usa(params_v):
 
     return sess_id_usa
 
-
+def check_sess_id_usa():
+    getuserstatus()
+    session = requests.session()
+    cookies_ = ConfigParser()
+    cookies_.read('cookies')
+    sess_id_usa = cookies_.get('COOKIES', 'sess_id_usa')
+    checkusaid = session.get('http://api.crunchyroll.com/start_session.0.json?session_id='+sess_id_usa)
+    if checkusaid.json()['code'] == 'ok':
+        print('sess_id_usa linked to:',checkusaid.json()['data']['country_code'])
+    else:
+        print('something gone wroung')
 
 if __name__ == '__main__':
-    try:
-        if sys.argv[1][0] == 'y':
-            username = input(u'Username: ')
-            password = getpass('Password(don\'t worry the password are typing but hidden:')
-    except IndexError:
+    #print(sys.argv[1])
+    if len(sys.argv) == 1:
+        username = input(u'Username: ')
+        password = getpass('Password(don\'t worry the password are typing but hidden:')
+        login(username, password)
+    elif sys.argv[1] == '-checkusa':
+        check_sess_id_usa()
+    elif len(sys.argv) == 2:
+        username = sys.argv[1]
+        password = getpass('Password(don\'t worry the password are typing but hidden:')
+        login(username, password)
+    else:
         username = ''
         password = ''
-    login(username, password)
+        login(username, password)
