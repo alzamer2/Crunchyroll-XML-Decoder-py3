@@ -12,7 +12,7 @@ import re
 import subprocess
 import sys
 
-from altfuncs import config, getxml, dircheck, gethtml, vilos_subtitle
+from altfuncs import config, clean_text, dircheck, gethtml, vilos_subtitle
 from unidecode import unidecode
 from hls_ import video_hls
 from Dash import dash_download
@@ -114,9 +114,15 @@ Booting up...
     #print(media_info['media_metadata']['episode_number'])
     #print(media_info['media_metadata']['episode_title'])
     if not htmlconfig['metadata']['episode_number'] is '':
-        title = clean_text('%s Episode %s - %s' % (htmlconfig['metadata']['series_title'],htmlconfig['metadata']['episode_number'], htmlconfig['metadata']['title']))
+        title = '%s Episode %s - %s' % (htmlconfig['metadata']['series_title'],htmlconfig['metadata']['episode_number'], htmlconfig['metadata']['title'])
+        # print(title)
+        title = clean_text(title)
+        # print(title)
     else:
-        title = clean_text('%s - %s' % (htmlconfig['metadata']['series_title'], htmlconfig['metadata']['title']))
+        title = '%s - %s' % (htmlconfig['metadata']['series_title'], htmlconfig['metadata']['title'])
+        # print(title)
+        title = clean_text(title)
+        # print(title)
     #title: str = re.findall(r'var mediaMetadata = \{.*?name":"(.+?)",".+?\};',html_page_)[0]
     #if len(os.path.join('export', title + '.flv')) > 255 or media_info['media_metadata']['episode_title'] is '':
     #    title = clean_text('%s Episode %s' % (media_info['media_metadata']['series_title'], media_info['media_metadata']['episode_number']))
@@ -494,13 +500,13 @@ def mkv_merge(video_input,pixl,defult_lang=None):
         if file.startswith(working_name) and (file.endswith(".ass") or file.endswith(".m4a") or file.endswith(".mp4") or file.endswith(".ts")):
             os.remove(os.path.abspath(os.path.join(working_dir,file)))
     
-def clean_text(text_):
-    ### Taken from http://stackoverflow.com/questions/6116978/python-replace-multiple-strings and improved to include the backslash###
-    rep = {' / ': ' - ', '/': ' - ', ':': '-', '?': '.', '"': "''", '|': '-', '&quot;': "''", 'a*G': 'a G', '*': '#',
-           r'\u2026': '...', r' \ ': ' - ', u'”': "''"}
-    rep = dict((re.escape(k), v) for k, v in rep.items())
-    pattern = re.compile("|".join(rep.keys()))
-    return unidecode(pattern.sub(lambda m: rep[re.escape(m.group(0))], text_))
+# def clean_text(text_):
+#     ### Taken from http://stackoverflow.com/questions/6116978/python-replace-multiple-strings and improved to include the backslash###
+#     rep = {' / ': ' - ', '/': ' - ', ':': '-', '?': '.', '"': "''", '|': '-', '&quot;': "''", 'a*G': 'a G', '*': '#',
+#            r'\u2026': '...', r' \ ': ' - ', u'”': "''"}
+#     rep = dict((re.escape(k), v) for k, v in rep.items())
+#     pattern = re.compile("|".join(rep.keys()))
+#     return unidecode(pattern.sub(lambda m: rep[re.escape(m.group(0))], text_))
 
     
 
