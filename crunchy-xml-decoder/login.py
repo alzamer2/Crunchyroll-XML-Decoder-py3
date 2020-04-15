@@ -10,6 +10,7 @@ from colorama import Fore, Style, init
 init()
 from altfuncs import config
 from proxy_cr import get_proxy
+import time
 
 import urllib.parse
 from requests import Session, Request
@@ -158,12 +159,20 @@ def create_sess_id_usa(params_v):
     # if usa_session_post.json()['error'] != "true":
     #     # print(usa_session_post.json())
     #     sess_id_usa = usa_session_post.json()['data']['session_id']
-    p_usa_session_post = Request('POST', 'http://api-manga.crunchyroll.com/cr_start_session', params=params_v).prepare()
+    p_usa_session_post = Request('POST', 'https://api.crunchyroll.com/start_session.0.json', params=params_v).prepare()
     encoded_usa_session_post_url = urllib.parse.quote(p_usa_session_post.url, safe='')
     google_p_params = {'container' : 'focus', 'url' : p_usa_session_post.url}
-    usa_session_post = usa_session.post('https://images-focus-opensocial.googleusercontent.com/gadgets/proxy', params=google_p_params)
-    # print(usa_session_post, usa_session_post.url)
-    # print(usa_session_post.json())
+    retries = 5
+    while retries >=0:
+        usa_session_post = usa_session.post('https://images-focus-opensocial.googleusercontent.com/gadgets/proxy', params=google_p_params)
+        # print(usa_session_post, usa_session_post.url)
+        # print(usa_session_post.content)
+        if usa_session_post.status_code == 200:
+            break
+        else:
+            retries -= 1
+            time.sleep(5)   #5 sec sleep to not over heat server
+            
     if usa_session_post.json()['error'] != "true":
          # print(usa_session_post.json())
          sess_id_usa = usa_session_post.json()['data']['session_id']
