@@ -5,7 +5,8 @@ import sys
 from urllib.parse import urlparse
 from configparser import ConfigParser
 import requests
-import cfscrape
+# import cfscrape
+import cloudscraper
 from lxml import etree
 import json
 from unidecode import unidecode
@@ -296,7 +297,8 @@ class FileAdapter(BaseAdapter):
 
 def gethtml(url, req='', headers=''):
     # session = requests.session()
-    session = cfscrape.create_scraper()
+    # session = cfscrape.create_scraper()
+    session = cloudscraper.create_scraper()
     session.mount('file://', LocalFileAdapter())
     cookies_ = ConfigParser()
     cookies_.read('cookies')

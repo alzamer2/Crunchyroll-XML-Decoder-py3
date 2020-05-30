@@ -68,12 +68,18 @@ def testing_external_moudules_(code_version=''):
     except ImportError:
         print(idle_cmd_txt_fix('Cryptography : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing Cryptography...'))
         pip_download_.append('cryptography==2.4.2')
+    # try: for now will keep it and remove it later
+    #     #     from cfscrape import create_scraper
+    #     #     print(idle_cmd_txt_fix('Cfscrape : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
+    #     # except ImportError:
+    #     #     print(idle_cmd_txt_fix('Cfscrape : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+ ', Installing Cfscrape...'))
+    #     #     pip_download_.append('cfscrape')
     try:
-        from cfscrape import create_scraper
-        print(idle_cmd_txt_fix('Cfscrape : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
+        import cloudscraper
+        print(idle_cmd_txt_fix('cloudscraper : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
     except ImportError:
-        print(idle_cmd_txt_fix('Cfscrape : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+ ', Installing Cfscrape...'))
-        pip_download_.append('cfscrape')
+        print(idle_cmd_txt_fix('cloudscraper : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+ ', Installing cloudscraper...'))
+        pip_download_.append('cloudscraper')
     try:
         import m3u8
         print(idle_cmd_txt_fix('m3u8 : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
