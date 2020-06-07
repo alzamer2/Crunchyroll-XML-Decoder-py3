@@ -295,10 +295,10 @@ class FileAdapter(BaseAdapter):
         pass
 
 
-def gethtml(url, req='', headers=''):
+def gethtml(url, req='', headers='', interpreter='nodejs'):
     # session = requests.session()
     # session = cfscrape.create_scraper()
-    session = cloudscraper.create_scraper()
+    session = cloudscraper.create_scraper(interpreter=interpreter)
     session.mount('file://', LocalFileAdapter())
     cookies_ = ConfigParser()
     cookies_.read('cookies')
