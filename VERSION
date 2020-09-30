@@ -1,3 +1,11 @@
+### 1.3 rev.26
+* fix login issue (#32, #33, #34)
+### 1.3 rev.25
+* add option to change the export\download location
+* added "--coding" to script argrument
+* updated mkvmerger
+* fixed code so that it can read old settings file with out crashing (only settings from version 1.3.rev24 and newer are suported)
+* fixed google proxy
 ### 1.3 rev.24
 * re-write login script and remove useless lines, not sure but maybe it will fix #29
 ### 1.3 rev.23

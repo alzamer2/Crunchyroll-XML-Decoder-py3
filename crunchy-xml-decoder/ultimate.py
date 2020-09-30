@@ -79,6 +79,8 @@ Booting up...
 
     #lang1, lang2, forcesub, forceusa, localizecookies, vquality, onlymainsub, connection_n_, proxy_ = config()
     config_ = config()
+    if not os.path.lexists(config_['download_dirctory']):
+        os.makedirs(config_['download_dirctory'])
     #print(config_)
     forcesub = config_['forcesubtitle']
     if sess_id_ == '':
@@ -113,7 +115,7 @@ Booting up...
     #print(media_info['media_metadata']['series_title'])
     #print(media_info['media_metadata']['episode_number'])
     #print(media_info['media_metadata']['episode_title'])
-    if not htmlconfig['metadata']['episode_number'] is '':
+    if htmlconfig['metadata']['episode_number'] != '':
         title = '%s Episode %s - %s' % (htmlconfig['metadata']['series_title'],htmlconfig['metadata']['episode_number'], htmlconfig['metadata']['title'])
         # print(title)
         title = clean_text(title)
@@ -126,9 +128,20 @@ Booting up...
     #title: str = re.findall(r'var mediaMetadata = \{.*?name":"(.+?)",".+?\};',html_page_)[0]
     #if len(os.path.join('export', title + '.flv')) > 255 or media_info['media_metadata']['episode_title'] is '':
     #    title = clean_text('%s Episode %s' % (media_info['media_metadata']['series_title'], media_info['media_metadata']['episode_number']))
-    Loc_lang = {u'Español (Espana)': 'esES', u'Français (France)': 'frFR', u'Português (Brasil)': 'ptBR',
-            u'English': 'enUS', u'Español': 'esLA', u'Türkçe': 'trTR', u'Italiano': 'itIT',
-            u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский' : 'ruRU'}
+    #print(config_['language2'])
+    #Loc_lang = {u'Español (Espana)': 'esES', u'Français (France)': 'frFR', u'Português (Brasil)': 'ptBR',
+    #        u'English': 'enUS', u'Español': 'esLA', u'Türkçe': 'trTR', u'Italiano': 'itIT',
+    #        u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский' : 'ruRU'}
+    Loc_lang = {'Espanol_Espana': 'esES',
+                'Francais': 'frFR',
+                'Portugues': 'ptBR',
+                'English': 'enUS',
+                'Espanol': 'esLA',
+                'Turkce': 'trTR',
+                'Italiano': 'itIT',
+                'Arabic': 'arME',
+                'Deutsch': 'deDE',
+                'Russian' : 'ruRU'}
     Loc_lang_1 = Loc_lang[config_['language']]
     Loc_lang_2 = Loc_lang[config_['language2']]
 
@@ -197,8 +210,8 @@ Booting up...
     #print(vquality,hls_url)
     print(format('Now Downloading - ' + title))
     #video_input = os.path.join("export", title + '.ts')
-    if not htmlconfig['metadata']['episode_number'] is '':
-        video_input = dircheck([os.path.join(os.path.abspath('export'),''),
+    if htmlconfig['metadata']['episode_number'] != '':
+        video_input = dircheck([os.path.join(os.path.abspath(config_['download_dirctory']),''),
                                  clean_text(htmlconfig['metadata']['series_title']),
                                  ' Episode',
                                  ' - ' + clean_text(htmlconfig['metadata']['episode_number']),
@@ -206,7 +219,7 @@ Booting up...
                                  '.ts'],
                                  ['True', 'True', 'False', 'True', 1, 'True',], 240)
     else:
-        video_input = dircheck([os.path.join(os.path.abspath('export'),''),
+        video_input = dircheck([os.path.join(os.path.abspath(config_['download_dirctory']),''),
                                  clean_text(htmlconfig['metadata']['series_title']),
                                  ' - ' + clean_text(htmlconfig['metadata']['title']),
                                  '.ts'],
@@ -444,10 +457,21 @@ def mkv_merge(video_input,pixl,defult_lang=None):
                           '-a', '1', '-d', '0', os.path.abspath(os.path.join(working_dir, file)), '--title', working_name]
     #cmd = [mkvmerge, "-o", os.path.abspath(filename_output), '--language', '0:jpn', '--language', '1:jpn',
     #       '-a', '1', '-d', '0', os.path.abspath(video_input), '--title', working_name]
-    lang_iso = {'English': 'English (US)', u'Español' : u'Espa\xf1ol', u'Español (Espana)': u'Espa\xf1ol (Espa\xf1a)',
-                u'Français (France)': u'Fran\xe7ais (France)', u'Português (Brasil)': u'Portugu\xeas (Brasil)',
-                u'Italiano': 'Italiano', u'Deutsch': 'Deutsch', u'العربية': 'العربية', u'Русский': 'Русский',
-                u'Türkçe': 'uTürkçe'}
+    #lang_iso = {'English': 'English (US)', u'Español' : u'Espa\xf1ol', u'Español (Espana)': u'Espa\xf1ol (Espa\xf1a)',
+    #            u'Français (France)': u'Fran\xe7ais (France)', u'Português (Brasil)': u'Portugu\xeas (Brasil)',
+    #            u'Italiano': 'Italiano', u'Deutsch': 'Deutsch', u'العربية': 'العربية', u'Русский': 'Русский',
+    #            u'Türkçe': 'Türkçe'}
+    lang_iso = {'Espanol_Espana': u'Espa\xf1ol (Espa\xf1a)',
+                'Francais': u'Fran\xe7ais (France)',
+                'Portugues': u'Portugu\xeas (Brasil)',
+                'English': 'English (US)',
+                'Espanol' : u'Espa\xf1ol',
+                'Turkce': 'Türkçe',
+                'Italiano': 'Italiano',
+                'Arabic': 'العربية',
+                'Deutsch': 'Deutsch',
+                'Russian': 'Русский'
+                }
     defult_lang_sub = ''
     for file in os.listdir(working_dir):
         if file.startswith(working_name) and file.endswith(".ass"):

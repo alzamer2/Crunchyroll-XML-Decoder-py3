@@ -10,6 +10,8 @@ locals().update({'crunchy_xml_decoder_py3':__import__('crunchy-xml-decoder-py3')
 if __name__ == '__main__':
     #proxy_cr.get_proxy(['HTTPS'],['US'])
     #crunchy_xml_decoder_py3.make_choise()
+    crunchy_xml_decoder_py3.check_external_test()
+    crunchy_xml_decoder_py3.check_cookies()
     crunchy_xml_decoder_py3.menu_test.start_()
     #debug(test_)
     #print('done?')

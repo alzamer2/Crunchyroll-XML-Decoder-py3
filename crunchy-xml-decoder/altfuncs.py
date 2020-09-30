@@ -23,6 +23,14 @@ import stat
 import locale
 import io
 
+#global altfuncs_print_coding
+altfuncs_print_coding = False
+#if 'altfuncs_print_coding' in globals():
+#    print(1)
+#else:
+#    altfuncs_print_coding = False
+
+#print(1, altfuncs_print_coding)
 #from six import BytesIO
 from io import BytesIO
 
@@ -65,6 +73,91 @@ def config_old2():
     return config_dict
 
 def config(defult=False, **kwargs):
+    lastest_config_version = 1
+    configr = ConfigParser()
+    def set_with_comment(ConfigParser_obj, section, name, value='',comment=''):
+        ConfigParser_obj.remove_option(section, name)
+        if comment == '':
+            ConfigParser_obj.set(section, name, value)
+        else:
+            ConfigParser_obj.set(section, '#'+comment+'\n'+name, str(value))
+
+    comments = {
+        'video_quality' : ''' Set this to the preferred quality. Possible values are: "240p" , "360p", "480p", "720p", "1080p", or "highest" for highest available.
+# Note that any quality higher than 360p still requires premium, unless it's available that way for free (some first episodes).
+# We're not miracle workers.''',
+        'language' : ''' Set this to the desired subtitle language. If the subtitles aren't available in that language, it reverts to the second language option (below).
+# Available languages: English, Espanol, Espanol_Espana, Francais, Portugues, Turkce, Italiano, Arabic, Deutsch''',
+        'language2' : ''' If the first language isn't available, what language would you like as a backup? Only if then they aren't found, then it goes to English as default''',
+        'forcesubtitle' : ''' Set this if you want to use --forced-track rather than --default-track for subtitle''',
+        'forceusa' : ''' Set this if you want to use a US session ID''',
+        'localizecookies' : ''' Set this if you want to Localize the cookies (this option is under testing and may generate some problem and it willnot work with -forceusa- option)''',
+        'onlymainsub' : ''' Set this if you only want to mux one subtitle only (this so make easy for some devices like TVs to play subtitle)''',
+        'dubfilter' : ''' Set this if you autocatch dub links too''',
+        'connection_n_' : ''' Set this option to increase the Number of the connection''',
+        'proxy' : ''' Set this option to use proxy, example: US''',
+        'download_dirctory' : '''the working dirctory where temp and downladed files saved'''
+        }
+    if os.path.lexists(os.path.join('.','settings.ini')):
+        configr.read('settings.ini')
+        #print(altfuncs_print_coding, configr.sections())
+        #input()
+        #print(locals())
+        #print(globals())
+        if altfuncs_print_coding:   
+            print(configr.sections())
+            print('SETTINGS_v'+str(lastest_config_version) in configr.sections())
+            input()
+        check_setting_v = int(lastest_config_version)
+        config_dict = dict()
+        while check_setting_v>0:
+            #print('x1')
+            #print('SETTINGS_v'+str(check_setting_v))
+            if 'SETTINGS_v'+str(check_setting_v) in configr.sections():
+                #print('x2')
+                if config_dict == {}:
+                    config_dict = globals()['config_v'+str(check_setting_v)](defult,**kwargs)
+            check_setting_v -=1
+        if config_dict == {}:
+            #print('x3')
+            config_dict = config_v0(defult,**kwargs)
+    else:
+        config_dict = globals()['config_v'+str(lastest_config_version)](defult,**kwargs)
+    #print('cx1', config_dict)
+    config_dict_out = dict(config_dict)
+    langd = {'Espanol_Espana': u'Español (Espana)',
+             'Francais': u'Français (France)',
+             'Portugues': u'Português (Brasil)',
+             'English': u'English',
+             'Espanol': u'Español',
+             'Turkce': u'Türkçe',
+             'Italiano': u'Italiano',
+             'Arabic': u'العربية',
+             'Deutsch': u'Deutsch',
+             'Russian': u'Русский'}
+    #print(config_dict['language2'], config_dict['language2'] in {v: k for k, v in langd.items()})
+    if config_dict['language'] in {v: k for k, v in langd.items()}:
+        config_dict['language'] = {v: k for k, v in langd.items()}[config_dict['language']]
+    #config_dict['language2'] = langd[config_dict['language2']]
+    if config_dict['language2'] in {v: k for k, v in langd.items()}:
+        config_dict['language2'] = {v: k for k, v in langd.items()}[config_dict['language2']]
+    #print(config_dict_out['language2'],config_dict_out)
+    if config_dict_out['language'] in {v: k for k, v in langd.items()}:
+        config_dict_out['language'] = {v: k for k, v in langd.items()}[config_dict_out['language']]
+    if config_dict_out['language2'] in {v: k for k, v in langd.items()}:
+        config_dict_out['language2'] = {v: k for k, v in langd.items()}[config_dict_out['language2']]
+    #print('cx2', config_dict)
+    if not 'SETTINGS_v'+str(lastest_config_version) in configr.sections():
+        configr.add_section('SETTINGS_v'+str(lastest_config_version))
+    for opt in config_dict_out:
+        set_with_comment(configr,'SETTINGS_v'+str(lastest_config_version), opt, config_dict_out[opt],comments[opt])
+    with open('settings.ini', 'w') as configfile:
+        configr.write(configfile)
+
+    return config_dict
+
+
+def config_v0(defult=False, **kwargs):
     dsettings = {
         'video_quality' : 'highest',
         'language' : 'English',
@@ -120,24 +213,77 @@ def config(defult=False, **kwargs):
              'Portugues': u'Português (Brasil)',
              'English': u'English', 'Espanol': u'Español', 'Turkce': u'Türkçe', 'Italiano': u'Italiano',
              'Arabic': u'العربية', 'Deutsch': u'Deutsch', 'Russian': u'Русский'}
+    #print('c1', config_dict)
+    for kwargs_key in kwargs:
+        if kwargs_key in boolean_list:
+            if kwargs[kwargs_key].lower() == 'toggle'.lower():
+                kwargs[kwargs_key] = not config_dict[kwargs_key]
+
+    config_dict_out = dict(config_dict)
     config_dict['language']=langd[config_dict['language']]
     config_dict['language2'] = langd[config_dict['language2']]
+        
+    config_dict.update(kwargs)
+    #print('c2', config_dict)
+    
+    #config_dict_out['language'] = {v: k for k, v in langd.items()}[config_dict_out['language']]
+    #config_dict_out['language2'] = {v: k for k, v in langd.items()}[config_dict_out['language2']]
+    #print('c3', config_dict)
+    #print('c4', config_dict_out)
+    for opt in config_dict_out:
+        set_with_comment(configr,'SETTINGS', opt, config_dict_out[opt],comments[opt])
+    with open('settings.ini', 'w') as configfile:
+        configr.write(configfile)
+    return config_dict
+
+def config_v1(defult=False, **kwargs):
+    #print(locals())
+    #print("%s/%s" %(sys._getframe().f_code.co_filename, sys._getframe().f_code.co_name))
+    #input()
+    fun_ver = sys._getframe().f_code.co_name.replace('config_v','')
+    dsettings = {
+        'video_quality' : 'highest',
+        'language' : 'English',
+        'language2' : 'English',
+        'forcesubtitle' : 'False',
+        'forceusa' : 'False',
+        'localizecookies' : 'False',
+        'onlymainsub' : 'False',
+        'dubfilter' : 'True',
+        'connection_n_' : '1',
+        'proxy' : '',
+        'download_dirctory' : os.path.join('.','export')
+        }
+
+    configr = ConfigParser()
+    if os.path.lexists(os.path.join('.','settings.ini')) and not defult:
+        configr.read('settings.ini')
+    else:
+        configr.add_section('SETTINGS_v'+fun_ver)
+        for opt in dsettings:
+            configr.set('SETTINGS_v'+fun_ver, opt, dsettings[opt])
+    config_dict ={}
+    for opt in configr.options('SETTINGS_v'+fun_ver):
+        config_dict[opt]=configr.get('SETTINGS_v'+fun_ver, opt)
+    for opt in dsettings:
+        #print(opt)
+        if not opt in config_dict:
+            config_dict.update({opt : dsettings[opt]})
+    boolean_list = ['forcesubtitle', 'forceusa', 'localizecookies', 'onlymainsub', 'dubfilter']
+    for i in boolean_list:
+        config_dict[i] = {'True': True, '1': True, 'yes': True, 'true': True, 'on': True, 'False': False, '0': False,
+                               'no': False, 'false': False, 'off': False}[config_dict[i]]
+    int_list = ['connection_n_']
+    for i in int_list:
+        config_dict[i] = int(config_dict[i])
     for kwargs_key in kwargs:
         if kwargs_key in boolean_list:
             if kwargs[kwargs_key].lower() == 'toggle'.lower():
                 kwargs[kwargs_key] = not config_dict[kwargs_key]
         
     config_dict.update(kwargs)
-    #print(config_dict)
-    config_dict_out = dict(config_dict)
-    config_dict_out['language'] = {v: k for k, v in langd.items()}[config_dict_out['language']]
-    config_dict_out['language2'] = {v: k for k, v in langd.items()}[config_dict_out['language2']]
-    #print(config_dict)
-    for opt in config_dict_out:
-        set_with_comment(configr,'SETTINGS', opt, config_dict_out[opt],comments[opt])
-    with open('settings.ini', 'w') as configfile:
-        configr.write(configfile)
     return config_dict
+
 
 class LocalFileAdapter(requests.adapters.BaseAdapter):
     """Protocol Adapter to allow Requests to GET file:// URLs
@@ -444,7 +590,9 @@ def vilos_subtitle(page_url_='', one_sub=None):
 ------------------------------''')
     #lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
     config_ = config()
-    if page_url_ is '':
+    if not os.path.lexists(config_['download_dirctory']):
+        os.makedirs(config_['download_dirctory'])
+    if page_url_ == '':
         page_url_ = input('Please enter Crunchyroll video URL:\n')
     if not re.findall(r'https?://www\.crunchyroll\.com/.+/.+-(\d*)', page_url_):
         print(idle_cmd_txt_fix("\x1b[31m" + "ERROR: Invalid URL." + "\x1b[0m"))
@@ -487,8 +635,8 @@ def vilos_subtitle(page_url_='', one_sub=None):
         if one_sub is True:
             if i["language"] != one_sub_lang:
                 continue
-        if not htmlconfig['metadata']['episode_number'] is '':
-            sub_file_ = dircheck([os.path.join(os.path.abspath('export'),''),
+        if htmlconfig['metadata']['episode_number'] != '':
+            sub_file_ = dircheck([os.path.join(os.path.abspath(config_['download_dirctory']),''),
                                   clean_text(htmlconfig['metadata']['series_title']),
                                   ' Episode',
                                   ' - ' + clean_text(htmlconfig['metadata']['episode_number']),
@@ -498,7 +646,7 @@ def vilos_subtitle(page_url_='', one_sub=None):
                                   '.ass'],
                                  ['True', 'True', 'False', 'True', 1, 'True', 'False', 'True'], 240)
         else:
-            sub_file_ = dircheck([os.path.join(os.path.abspath('export'),''),
+            sub_file_ = dircheck([os.path.join(os.path.abspath(config_['download_dirctory']),''),
                                   clean_text(htmlconfig['metadata']['series_title']),
                                   ' - ' + clean_text(htmlconfig['metadata']['title']),
                                   '[' + lang_iso2[i["language"]] + ']',

@@ -149,9 +149,15 @@ def testing_external_moudules_(code_version=''):
     if not os.path.lexists(os.path.join(bin_dir__,"mkvmerge.exe")):
         import wget
         print(idle_cmd_txt_fix('mkvmerge : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading mkvmerge...'))
-        wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge.zip',bin_dir__)
-        unzip_(os.path.join(bin_dir__,"mkvmerge.zip"), bin_dir__)
-        os.remove(os.path.join(bin_dir__,"mkvmerge.zip"))
+        #wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge.zip',bin_dir__)
+        if platform.machine().endswith('64'):
+            wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge_win64.zip',bin_dir__)
+            unzip_(os.path.join(bin_dir__,"mkvmerge_win64.zip"), bin_dir__)
+            os.remove(os.path.join(bin_dir__,"mkvmerge_win64.zip"))
+        else:
+            wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge_win32.zip',bin_dir__)
+            unzip_(os.path.join(bin_dir__,"mkvmerge_win32.zip"), bin_dir__)
+            os.remove(os.path.join(bin_dir__,"mkvmerge_win32.zip"))
     ## at momment rtmpdump Deprecation wil remove in the future
     '''
     if not os.path.exists(bin_dir__+"\\rtmpdump.exe"):
