@@ -606,9 +606,9 @@ def vilos_subtitle(page_url_='', one_sub=None):
                 'deDE' : 'Deutsch','arME' :  'العربية', 'ruRU' : 'Русский','enGB' : 'English (UK)', 'trTR':'uTürkçe'}
     lang_iso2 = {'enUS': 'eng', 'esLA': 'spa', 'esES': 'spa', 'frFR': 'fre', 'ptBR': 'por', 'itIT': 'ita',
                  'deDE': 'deu', 'arME': 'ara', 'ruRU': 'rus', 'enGB': 'eng', 'trTR': 'tur'}
-    Loc_lang = {u'Español (Espana)': 'esES', u'Français (France)': 'frFR', u'Português (Brasil)': 'ptBR',
-                u'English': 'enUS', u'Español': 'esLA', u'Türkçe': 'trTR', u'Italiano': 'itIT',
-                u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский': 'ruRU'}
+    Loc_lang = {'Espanol_Espana': 'esES', 'Francais': 'frFR', 'Portugues': 'ptBR',
+                'English': 'enUS', 'Espanol': 'esLA', 'Turkce': 'trTR', 'Italiano': 'itIT',
+                'Arabic': 'arME', 'Deutsch': 'deDE', 'Russian': 'ruRU'}
 
     if one_sub is None:
         one_sub = config_['onlymainsub']
