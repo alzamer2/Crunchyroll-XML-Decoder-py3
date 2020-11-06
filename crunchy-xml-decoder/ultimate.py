@@ -427,7 +427,7 @@ download_.video_hls("''' + hls_url + '''", r"''' + video_input + '''", ''' + str
     vilos_subtitle(page_url)
     mkv_merge(video_input, config_['video_quality'], 'English')
 
-def mkv_merge(video_input,pixl,defult_lang=None):
+def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
     print('Starting mkv merge')
     #lang1, lang2, forcesub, forceusa, localizecookies, vquality, onlymainsub, connection_n_, proxy_ = config()
     config_ = config()
@@ -512,17 +512,43 @@ def mkv_merge(video_input,pixl,defult_lang=None):
                 #cmd.extend(['-s', '0'])
                 #cmd.append(filename_subtitle)
     #print(cmd)
-    if os.name == 'nt':
-        subprocess.call(cmd)
-    else:
-        subprocess.call(['wine']+cmd)
+    cmd_exitcode = 2
+    #if os.name == 'nt':
+    #    cmd_exitcode = subprocess.call(cmd)
+    #else:
+    #    cmd_exitcode = subprocess.call(['wine']+cmd)
+    if os.name != 'nt':
+        cmd = ['wine']+cmd
+    cmd_exitcode = subprocess.call(cmd)
+    #print(cmd_exitcode)
+    #print(cmd)
+    if cmd_exitcode != 0:
+        print('fixing TS file')
+        for file in os.listdir(working_dir):
+            if file.startswith(working_name) and file.endswith(".ts"):
+                #os.path.abspath(os.path.join(working_dir, file))
+                unix_pre = []
+                if os.name != 'nt':
+                    unix_pre += ['wine']
+                subprocess.call(unix_pre + [mkvmerge.replace('mkvmerge', 'ffmpeg'), '-i', os.path.abspath(os.path.join(working_dir, file)), '-map', '0', '-c', 'copy',
+                                 '-f', 'mpegts', os.path.abspath(os.path.join(working_dir, file)).replace('.ts','_fix.ts')])
+                if os.name == 'nt':
+                    cmd[11] = cmd[11].replace('.ts','_fix.ts')
+                else:
+                    cmd[12] = cmd[12].replace('.ts','_fix.ts')
+                #print(cmd)
+                cmd_exitcode = subprocess.call(cmd)
+                #print(cmd_exitcode)
+                
     #subprocess.Popen(cmd.encode('ascii', 'surrogateescape').decode('utf-8'))
     print('Merge process complete')
     print('Starting Final Cleanup')
     #os.remove(os.path.abspath(video_input))
-    for file in os.listdir(working_dir):
-        if file.startswith(working_name) and (file.endswith(".ass") or file.endswith(".m4a") or file.endswith(".mp4") or file.endswith(".ts")):
-            os.remove(os.path.abspath(os.path.join(working_dir,file)))
+    if not keep_files:
+        for file in os.listdir(working_dir):
+            if file.startswith(working_name) and (file.endswith(".ass") or file.endswith(".m4a") or file.endswith(".mp4") or file.endswith(".ts")):
+                os.remove(os.path.abspath(os.path.join(working_dir,file)))
+                
     
 # def clean_text(text_):
 #     ### Taken from http://stackoverflow.com/questions/6116978/python-replace-multiple-strings and improved to include the backslash###

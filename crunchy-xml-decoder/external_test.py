@@ -158,6 +158,11 @@ def testing_external_moudules_(code_version=''):
             wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge_win32.zip',bin_dir__)
             unzip_(os.path.join(bin_dir__,"mkvmerge_win32.zip"), bin_dir__)
             os.remove(os.path.join(bin_dir__,"mkvmerge_win32.zip"))
+    if not os.path.lexists(os.path.join(bin_dir__,"ffmpeg.exe")):
+        import wget
+        wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/ffmpeg.zip',bin_dir__)
+        unzip_(os.path.join(bin_dir__,"ffmpeg.zip"), bin_dir__)
+        os.remove(os.path.join(bin_dir__,"ffmpeg.zip"))
     ## at momment rtmpdump Deprecation wil remove in the future
     '''
     if not os.path.exists(bin_dir__+"\\rtmpdump.exe"):

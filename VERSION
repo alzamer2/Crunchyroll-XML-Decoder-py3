@@ -1,3 +1,7 @@
+### 1.3 rev.29
+* update mkvmerger to v51
+* add ffmpeg 4.3.1
+* fix muxing error with new mkvmerger (#37)
 ### 1.3 rev.28
 * change how updater close program and add update download retries (#33)
 ### 1.3 rev.27
