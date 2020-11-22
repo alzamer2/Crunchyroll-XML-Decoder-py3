@@ -9,12 +9,11 @@ import string
 from colorama import Fore, Style, init
 init()
 import time
-#import cloudscraper
+import cloudscraper
 import re
 from cryptography.fernet import Fernet
 
-#import urllib.parse
-#from requests import Request
+import subprocess
 
 
 try:
@@ -28,10 +27,6 @@ except:
 
 from altfuncs import config
 from proxy_cr import get_proxy
-#def config():
-#  return {'proxy':'', 'forceusa': True}
-#def get_proxy(x,y):
-#  return ['']
 
 def getuserstatus(sess_id_renew = False, sess_id = ''):
     """
@@ -77,7 +72,6 @@ def getuserstatus(sess_id_renew = False, sess_id = ''):
     auth = ''
     auth2 = ''
 
-    #session = requests.session()
     cookies_ = ConfigParser()
     cookies_.read('cookies')
     if sess_id =='':
@@ -90,27 +84,15 @@ def getuserstatus(sess_id_renew = False, sess_id = ''):
           auth2 = cookies_.get('COOKIES', 'auth2')
     resp = requests.get('http://api.crunchyroll.com/start_session.0.json', params={'session_id' : sess_id})
     checkusaid = resp.json()
-    #print('test1',resp)
-    #print(resp.url)
-    #print(checkusaid)
     if config()['forceusa']:
       resp = requests.get('http://api.crunchyroll.com/start_session.0.json', params={'session_id' : sess_id_usa})
       checkusaid_us = resp.json()
-      #print('test2',resp)
-      #print(resp.url)
-      #print(checkusaid_us)
       if checkusaid_us['code'] != 'ok':
         sess_id_renew = True
     else:
       sess_id_usa = ''
-    #print(checkusaid)
     if checkusaid['code'] != 'ok':
       sess_id_renew = True
-      #if checkusaid['country_code'] != 'US' and config()['forceusa'] and sess_id_usa != '':
-      #  checkusaid_us = session.get('http://api.crunchyroll.com/start_session.0.json?session_id='+sess_id_usa).json()
-      #  print(checkusaid_us)
-      #  if checkusaid_us['code'] != 'ok':
-      #    sess_id_renew = True
     
     if sess_id_renew:
       requests.get('http://api.crunchyroll.com/end_session.0.json?session_id='+sess_id_usa)
@@ -120,7 +102,6 @@ def getuserstatus(sess_id_renew = False, sess_id = ''):
         return ['Guest', 'Guest']
 
       re_username, re_password = extrct_auth2(auth2)
-      #print(re_username, re_password)
       re_login_status = login(re_username, re_password)
       return re_login_status
       """
@@ -161,8 +142,6 @@ auth = {}
         else:
           status = 'Premium'
     
-    #print(1,[status, user1])
-    
     return [status, user1]
 
         
@@ -184,14 +163,12 @@ def create_sess_id(usa_=False, auth = ''):
     sess_id_data = {'session_id': ''}
     ### First Method
     p_usa_session_post = requests.Request('GET', 'https://api.crunchyroll.com/start_session.0.json', params=payload).prepare()
-    #encoded_usa_session_post_url = urllib.parse.quote(p_usa_session_post.url, safe='')
     google_p_params = {'container' : 'focus', 'url' : p_usa_session_post.url}
     retries = 5
     retries_o = retries+1
     while retries >=0:
       print('using g_proxy retry #{}'.format(retries_o-retries))
       usa_session_post = session.post('https://images-focus-opensocial.googleusercontent.com/gadgets/proxy', params=google_p_params, headers=headers)
-      #print(usa_session_post.json())
       if usa_session_post.status_code == 200:
         break
       else:
@@ -205,10 +182,8 @@ def create_sess_id(usa_=False, auth = ''):
         print(h.handle(usa_session_post.text))
       except:
         print(usa_session_post.content)
-        #exit()
     
     if sess_id_data['session_id'] == '': ### Second Method
-      #print("Second Method")
       for prxy_ in get_proxy(['HTTPS'],['US']):
         proxies = {'https': prxy_}
         try:
@@ -219,7 +194,6 @@ def create_sess_id(usa_=False, auth = ''):
           pass
 
     if sess_id_data['session_id'] == '': ### Third Method
-      #print("Third Method")
       try:
         usa_session_post = session.get('http://rssfeedfilter.netne.net/').json()
         sess_id_data['session_id'] = usa_session_post['sessionId']
@@ -233,44 +207,51 @@ def create_sess_id(usa_=False, auth = ''):
   else:
     sess_id_data = None
     if config()['proxy'] != '':
-      proxy_ = get_proxy(['HTTPS'], [config()['proxy']])
-      #print(proxy_)
-      #input()
-      
-      if len(proxy_) > 0:
+      proxy_ = get_proxy([config()['proxy']])
+      def get_session_loop(type_ = 'https',proxy_ = [],params={}):
+        try:
+          subprocess.call(['node','-v'],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+          session = cloudscraper.create_scraper(interpreter='nodejs')
+        except FileNotFoundError:
+          session = cloudscraper.create_scraper()
+          
         for proxy_ip in proxy_:
-          #print(proxy_ip)
-          proxies = {'http': proxy_ip}
+          if type_ == 'https' or type_ == 'http':
+            proxies = {'http': proxy_ip, 'https': proxy_ip}
+          elif type_ == 'socks4':
+            proxies = {'http': 'socks4://{}'.format(proxy_ip), 'https': 'socks4://{}'.format(proxy_ip)}
+          elif type_ == 'socks5':
+            proxies = {'http': 'socks5://{}'.format(proxy_ip), 'https': 'socks5://{}'.format(proxy_ip)}
+          else:
+            raise Exception("Type is invaled")
           try:
-            #print('trying {}'.format(proxy_ip))
-            proxy_session = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload, timeout=180)
-            #print('proxy {} respond is: {}'.format(proxy_ip, proxy_session))
-            #print(proxy_session.text)
-            if proxy_session.json()['data']['country_code'] == config()['proxy']:
-              sess_id_data = proxy_session.json()['data']
-              break
+            proxy_session = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=params, timeout=180)
+            print(proxy_session.status_code)
+            if proxy_session.status_code == 200:
+              if proxy_session.json()['data']['country_code'] == config()['proxy']:
+                return proxy_session.json()['data']
           except:
-            continue
-        
-        #print(sess_id_data)
-      else:
+            pass
+          
+        return None
+
+      sess_id_data = get_session_loop('https',proxy_['https'],payload)
+      if sess_id_data == None:
+        sess_id_data = get_session_loop('socks5',proxy_['socks5'],payload)
+      if sess_id_data == None:
+        sess_id_data = get_session_loop('socks4',proxy_['socks4'],payload)
+      if sess_id_data == None:
+        if False:
+          sess_id_data = get_session_loop('http',proxy_['http'],payload)
+      if sess_id_data == None:
+        print('code was unable to create session id for selected country , try again later or use vpn to crease session (you only need vpn to login so you can close vpn connection to save data when downloading)')
         proxies = {}
         try:
           sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload).json()['data']
         except requests.exceptions.ProxyError:
           sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', params=payload).json()['data']
-        
-      #try:
-      #  proxies = {'http': proxy_[0]}
-      #except:
-      #  proxies = {}
     if sess_id_data is None:
       sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', params=payload).json()['data']
-    #try:
-    #  sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload).json()['data']
-    #except requests.exceptions.ProxyError:
-    #  sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', params=payload).json()['data']
-    #print(sess_id_data)
   returned_data = {'sess_id' : sess_id_data['session_id'], 'device_id': device_id, 'proxies': proxies, 'country_code': sess_id_data['country_code']}
     
   return returned_data
@@ -283,53 +264,21 @@ def login(username, password):
     sess_id_usa = ''
     auth = ''
     auth2 = ''
-    #session = requests.session()
-    #device_id = ''.join(random.sample(string.ascii_letters + string.digits, 32))
-    #device_id_usa = ''.join(random.sample(string.ascii_letters + string.digits, 32))
-    #payload_usa = {'device_id': device_id_usa, 'api_ver': '1.0',
-    #           'device_type': 'com.crunchyroll.crunchyroid', 'access_token': 'WveH9VkPLrXvuNm', 'version': '2313.8',
-    #           'locale': 'jaJP', 'duration': '9999999999'}
-    #payload = {'device_id': device_id, 'api_ver': '1.0',
-    #           'device_type': 'com.crunchyroll.crunchyroid', 'access_token': 'WveH9VkPLrXvuNm', 'version': '2313.8',
-    #           'locale': 'jaJP', 'duration': '9999999999'}
-    #if config()['proxy'] != '':
-    #    proxy_ = get_proxy(['HTTPS'], [config()['proxy']])
-    #    try:
-    #        proxies = {'http': proxy_[0]}
-    #    except:
-    #        proxies = {}
-    #else:
-    #    proxies = {}
 
-
-    
     generate_sess_id = create_sess_id()
-    #print(generate_sess_id)
     sess_id = generate_sess_id['sess_id']
     device_id = generate_sess_id['device_id']
     proxies = generate_sess_id['proxies']
-    #generate_sess_id['country_code'] = 'JO'
-    ##print(generate_sess_id['country_code'], 'forceusa:'+str(config()['forceusa']), generate_sess_id['country_code'] != 'US' and  config()['forceusa'])
     if generate_sess_id['country_code'] != 'US' and  config()['forceusa']:
-      ##print('us seesss')
       generate_sess_id_usa = create_sess_id(True)
       sess_id_usa = generate_sess_id_usa['sess_id']
       device_id_usa = generate_sess_id_usa['device_id']
 
-    ##print(sess_id_usa)
-    #try:
-    #    sess_id_ = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload).json()['data']['session_id']
-    #except requests.exceptions.ProxyError:
-    #    sess_id_ = session.post('http://api.crunchyroll.com/start_session.0.json', params=payload).json()['data']['session_id']
-    #auth = ''
     if username != '' and password != '':
-        #print('test1')
         auth2 = generate_auth2(username, password)
         payload = {'session_id' : sess_id,'locale': 'jaJP','duration': '9999999999','account' : username, 'password' : password}
         try:
             respond = session.post('https://api.crunchyroll.com/login.0.json', params=payload)
-            #print(respond,respond.text)
-            #print(respond.url)
             auth = respond.json()['data']['auth']
             
         except:
@@ -338,22 +287,8 @@ def login(username, password):
             payload = {'session_id' : sess_id_usa,'locale': 'jaJP','duration': '9999999999','account' : username, 'password' : password}
             try:
                 respond = session.post('https://api.crunchyroll.com/login.0.json', params=payload)
-                #print(respond,respond.text)
-                #print(respond.url)
             except:
                 pass
-    #input()
-    #payload = {'device_id': device_id, 'api_ver': '1.0',
-    #           'device_type': 'com.crunchyroll.crunchyroid', 'access_token': 'WveH9VkPLrXvuNm', 'version': '2313.8',
-    #           'locale': 'jaJP', 'duration': '9999999999', 'auth': auth}
-    #try:
-    #    respond = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload)
-    #    print(respond, respond.text)
-    #    print(respond.url)
-    #    input()
-    #    sess_id = respond.json()['data']['session_id']
-    #except requests.exceptions.ProxyError:
-    #    sess_id = session.post('http://api.crunchyroll.com/start_session.0.json', params=payload).json()['data']['session_id']
     
     cookies_out = '''\
 [COOKIES]
@@ -364,14 +299,10 @@ sess_id_usa = {}
 auth = {}
 auth2 = {}
 '''.format(device_id, device_id_usa, sess_id, sess_id_usa, auth, auth2)
-        # open("cookies", "w").write('[COOKIES]\nsess_id = '+sess_id_+'\nsess_id_usa = '+sess_id_usa+'\nauth = '+auth)
     open("cookies", "w").write(cookies_out)
     userstatus = getuserstatus(False)
-    #userstatus = ['1','1']
-    #print(userstatus)
     if username != '' and userstatus[0] == 'Guest':
         print('Login failed.' if 'idlelib.run' in sys.modules else '\x1b[31m' + 'Login failed.' + '\x1b[0m')
-    # sys.exit()
     else:
         print('Login as ' + userstatus[1] + ' successfully.' if 'idlelib.run' in sys.modules else 'Login as ' + '\x1b[32m' + userstatus[1] + '\x1b[0m' + ' successfully.')
     
@@ -403,19 +334,14 @@ def generate_auth2(username__, password__):
   pad_2 = ''
   pad_3 = ''
   pad_1_length = random.randint(1, 256-(len(username__)+len(password__)+2))
-  #print(pad_1_length)
   for i in range(0,pad_1_length):
     pad_1 += random.sample(string.ascii_letters + string.digits, 1)[0]
-  #print(len(pad_1))
-  #pad_1 = ''.join(random.sample(string.ascii_letters + string.digits, random.randint(1,pad_1_length)))
   pad_2_length = random.randint(1, 256-(pad_1_length+len(username__)+len(password__)+1))
   for i in range(0,pad_2_length):
     pad_2 += random.sample(string.ascii_letters + string.digits, 1)[0]
-  #pad_2 = ''.join(random.sample(string.ascii_letters + string.digits, random.randint(1,pad_2_length)))
   pad_3_length = 256-(pad_1_length+len(username__)+pad_2_length+len(password__))
   for i in range(0,pad_3_length):
     pad_3 += random.sample(string.ascii_letters + string.digits, 1)[0]
-  #pad_3 = ''.join(random.sample(string.ascii_letters + string.digits, pad_3_length))
   auth2 = pad_1+username__+pad_2+password__+pad_3
   key_file = """\
 def get_key():
@@ -432,13 +358,8 @@ def extrct_auth2(auth2):
   return user_pass_
 
 if __name__ == '__main__':
-    #print(sys.argv[1])
     if len(sys.argv) == 1:
-        #print(getuserstatus())
         check_sess_id()
-        #username = input(u'Username: ')
-        #password = getpass('Password(don\'t worry the password are typing but hidden:')
-        #login(username, password)
     elif sys.argv[1] == '-getuserstatus':
         print(getuserstatus())
     elif sys.argv[1] == '-check_sess_id':

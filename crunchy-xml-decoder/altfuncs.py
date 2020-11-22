@@ -5,7 +5,6 @@ import sys
 from urllib.parse import urlparse
 from configparser import ConfigParser
 import requests
-# import cfscrape
 import cloudscraper
 from lxml import etree
 import json
@@ -23,15 +22,7 @@ import stat
 import locale
 import io
 
-#global altfuncs_print_coding
 altfuncs_print_coding = False
-#if 'altfuncs_print_coding' in globals():
-#    print(1)
-#else:
-#    altfuncs_print_coding = False
-
-#print(1, altfuncs_print_coding)
-#from six import BytesIO
 from io import BytesIO
 
 def config_old():
@@ -100,10 +91,6 @@ def config(defult=False, **kwargs):
         }
     if os.path.lexists(os.path.join('.','settings.ini')):
         configr.read('settings.ini')
-        #print(altfuncs_print_coding, configr.sections())
-        #input()
-        #print(locals())
-        #print(globals())
         if altfuncs_print_coding:   
             print(configr.sections())
             print('SETTINGS_v'+str(lastest_config_version) in configr.sections())
@@ -111,19 +98,14 @@ def config(defult=False, **kwargs):
         check_setting_v = int(lastest_config_version)
         config_dict = dict()
         while check_setting_v>0:
-            #print('x1')
-            #print('SETTINGS_v'+str(check_setting_v))
             if 'SETTINGS_v'+str(check_setting_v) in configr.sections():
-                #print('x2')
                 if config_dict == {}:
                     config_dict = globals()['config_v'+str(check_setting_v)](defult,**kwargs)
             check_setting_v -=1
         if config_dict == {}:
-            #print('x3')
             config_dict = config_v0(defult,**kwargs)
     else:
         config_dict = globals()['config_v'+str(lastest_config_version)](defult,**kwargs)
-    #print('cx1', config_dict)
     config_dict_out = dict(config_dict)
     langd = {'Espanol_Espana': u'Español (Espana)',
              'Francais': u'Français (France)',
@@ -135,18 +117,14 @@ def config(defult=False, **kwargs):
              'Arabic': u'العربية',
              'Deutsch': u'Deutsch',
              'Russian': u'Русский'}
-    #print(config_dict['language2'], config_dict['language2'] in {v: k for k, v in langd.items()})
     if config_dict['language'] in {v: k for k, v in langd.items()}:
         config_dict['language'] = {v: k for k, v in langd.items()}[config_dict['language']]
-    #config_dict['language2'] = langd[config_dict['language2']]
     if config_dict['language2'] in {v: k for k, v in langd.items()}:
         config_dict['language2'] = {v: k for k, v in langd.items()}[config_dict['language2']]
-    #print(config_dict_out['language2'],config_dict_out)
     if config_dict_out['language'] in {v: k for k, v in langd.items()}:
         config_dict_out['language'] = {v: k for k, v in langd.items()}[config_dict_out['language']]
     if config_dict_out['language2'] in {v: k for k, v in langd.items()}:
         config_dict_out['language2'] = {v: k for k, v in langd.items()}[config_dict_out['language2']]
-    #print('cx2', config_dict)
     if not 'SETTINGS_v'+str(lastest_config_version) in configr.sections():
         configr.add_section('SETTINGS_v'+str(lastest_config_version))
     for opt in config_dict_out:
@@ -213,7 +191,6 @@ def config_v0(defult=False, **kwargs):
              'Portugues': u'Português (Brasil)',
              'English': u'English', 'Espanol': u'Español', 'Turkce': u'Türkçe', 'Italiano': u'Italiano',
              'Arabic': u'العربية', 'Deutsch': u'Deutsch', 'Russian': u'Русский'}
-    #print('c1', config_dict)
     for kwargs_key in kwargs:
         if kwargs_key in boolean_list:
             if kwargs[kwargs_key].lower() == 'toggle'.lower():
@@ -224,12 +201,6 @@ def config_v0(defult=False, **kwargs):
     config_dict['language2'] = langd[config_dict['language2']]
         
     config_dict.update(kwargs)
-    #print('c2', config_dict)
-    
-    #config_dict_out['language'] = {v: k for k, v in langd.items()}[config_dict_out['language']]
-    #config_dict_out['language2'] = {v: k for k, v in langd.items()}[config_dict_out['language2']]
-    #print('c3', config_dict)
-    #print('c4', config_dict_out)
     for opt in config_dict_out:
         set_with_comment(configr,'SETTINGS', opt, config_dict_out[opt],comments[opt])
     with open('settings.ini', 'w') as configfile:
@@ -237,9 +208,6 @@ def config_v0(defult=False, **kwargs):
     return config_dict
 
 def config_v1(defult=False, **kwargs):
-    #print(locals())
-    #print("%s/%s" %(sys._getframe().f_code.co_filename, sys._getframe().f_code.co_name))
-    #input()
     fun_ver = sys._getframe().f_code.co_name.replace('config_v','')
     dsettings = {
         'video_quality' : 'highest',
@@ -266,7 +234,6 @@ def config_v1(defult=False, **kwargs):
     for opt in configr.options('SETTINGS_v'+fun_ver):
         config_dict[opt]=configr.get('SETTINGS_v'+fun_ver, opt)
     for opt in dsettings:
-        #print(opt)
         if not opt in config_dict:
             config_dict.update({opt : dsettings[opt]})
     boolean_list = ['forcesubtitle', 'forceusa', 'localizecookies', 'onlymainsub', 'dubfilter']
@@ -442,15 +409,17 @@ class FileAdapter(BaseAdapter):
 
 
 def gethtml(url, req='', headers='', interpreter='nodejs'):
-    # session = requests.session()
-    # session = cfscrape.create_scraper()
-    session = cloudscraper.create_scraper(interpreter=interpreter)
+    if interpreter == 'nodejs':
+        try:
+            subprocess.call(['node','-v'],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            session = cloudscraper.create_scraper(interpreter=interpreter)
+        except FileNotFoundError:
+            session = cloudscraper.create_scraper()
     session.mount('file://', LocalFileAdapter())
     cookies_ = ConfigParser()
     cookies_.read('cookies')
     session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id')
     session.cookies['session_id'] = cookies_.get('COOKIES', 'sess_id')
-    #lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
     config_ = config()
     if config_['forceusa']:
         session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id_usa')
@@ -470,8 +439,6 @@ def gethtml(url, req='', headers='', interpreter='nodejs'):
                    'User-Agent': 'Mozilla/5.0  Windows NT 6.1; rv:26.0 Gecko/20100101 Firefox/26.0'}
     res = session.get(url, params=req, headers=headers)
     res.encoding = 'UTF-8'
-    #print(session.get(url, params=req, headers=headers).url)
-    #open('page.html', 'a',encoding='UTF-8').write(res.text)
     return res.text
 
 
@@ -482,14 +449,12 @@ def getxml(req, med_id):
                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:26.0) Gecko/20100101 Firefox/26.0)'}
     qualities = {'240p': ['107', '71'], '360p': ['106', '60'], '480p': ['106', '61'],
                  '720p': ['106', '62'], '1080p': ['108', '80'], 'highest': ['0', '0']}
-    #lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
     config_ = config()
     video_format = qualities[config_['video_quality']][0]
     resolution = qualities[config_['video_quality']][1]
     if req == 'RpcApiSubtitle_GetXml':
         payload = {'req': 'RpcApiSubtitle_GetXml', 'subtitle_script_id': med_id}
         html = gethtml(url, payload, headers)
-        # xml_ = etree.fromstring(html.encode('UTF-8'))
         return html
     elif req == 'RpcApiVideoPlayer_GetStandardConfig':
         payload = {'req': 'RpcApiVideoPlayer_GetStandardConfig', 'media_id': med_id, 'video_format': video_format,
@@ -497,9 +462,6 @@ def getxml(req, med_id):
                    'current_page': 'http://www.crunchyroll.com/'}
         html = gethtml(url, payload, headers)
         xml_ = etree.fromstring(str.encode(html))
-        # print( {i.tag:i.text for i in xml_.findall('.//stream_info/.')[0]})
-        # print( {'subtitle':[[i.attrib['id'],i.attrib['title'],i.attrib['link']] for i in xml_.findall('.//subtitle/.[@link]')]})
-        # print(dict(list({i.tag:i.text for i in xml_.findall('.//stream_info/.')[0]}.items())+list({'subtitle':[[i.attrib['id'],i.attrib['title'],i.attrib['link']] for i in xml_.findall('.//subtitle/.[@link]')]}.items())+list({'media_metadata':{i.tag:i.text for i in xml_.findall('.//media_metadata/.')[0]}}.items())))
         return dict(list({i.tag: i.text for i in xml_.findall('.//stream_info/.')[0]}.items()) + list({'subtitle': [
             [i.attrib['id'], i.attrib['title'], i.attrib['link']] for i in
             xml_.findall('.//subtitle/.[@link]')]}.items()) + list(
@@ -555,8 +517,6 @@ def dircheck(text_=[], text_condition_=[], max_len=255, max_retries=''):
         output_data_ += i
     while len(output_data_) > max_len:
         retries_ += 1
-        # output_data_ = output_data_[:-1]
-        # for i,k in enumerate(reversed(text_condition_)):
         output_data_ = ''
         for i, k in enumerate(text_condition_):
             if k == 0:
@@ -564,7 +524,6 @@ def dircheck(text_=[], text_condition_=[], max_len=255, max_retries=''):
         for i in text_:
             output_data_ += i
         loop_check_output = output_data_
-        # print output_data_
         try:
             text_[len(text_condition_) - text_condition_[::-1].index('False') - 1] = ''
             text_condition_[len(text_condition_) - text_condition_[::-1].index('False') - 1] = 0
@@ -588,7 +547,6 @@ def vilos_subtitle(page_url_='', one_sub=None):
 ------------------------------
 ---- Downloading Subtitle ----
 ------------------------------''')
-    #lang, lang2, forcesub, forceusa, localizecookies, quality, onlymainsub, connection_n_, proxy_ = config()
     config_ = config()
     if not os.path.lexists(config_['download_dirctory']):
         os.makedirs(config_['download_dirctory'])
@@ -612,24 +570,18 @@ def vilos_subtitle(page_url_='', one_sub=None):
 
     if one_sub is None:
         one_sub = config_['onlymainsub']
-    #avible_sub=[]
     one_sub_lang = ''
-    #print(config_)
     for i in htmlconfig['subtitles']:
-        # print(i["language"], config_['language'], config_['language2'], one_sub_lang)
-        # print(i["language"], Loc_lang[config_['language']],Loc_lang[config_['language2']],one_sub_lang)
         if i["language"] == Loc_lang[config_['language']]:
             one_sub_lang = i["language"]
         if one_sub_lang == '':
             if i["language"] == Loc_lang[config_['language2']]:
                 one_sub_lang = i["language"]
-        #avible_sub += [i["language"]]
     if one_sub_lang == '':
         try:
             one_sub_lang = htmlconfig['subtitles'][0]["language"]
         except IndexError:
             print('The video has hardcoded subtitles.')
-            #exit()
 
     for i in htmlconfig['subtitles']:
         if one_sub is True:
@@ -653,13 +605,11 @@ def vilos_subtitle(page_url_='', one_sub=None):
                                   '[' + lang_iso[i["language"]] + ']',
                                   '.ass'],
                                  ['True', 'True', 1, 'True', 'False', 'True'], 240)
-        #print(i["language"], i["url"])
         try:
             print(idle_cmd_txt_fix("Attempting to download " + '\x1b[32m' + lang_iso[i["language"]] + '\x1b[0m' + " subtitle..."))
         except:
             print(unidecode(idle_cmd_txt_fix("Attempting to download " + '\x1b[32m' + lang_iso[i["language"]] + '\x1b[0m' + " subtitle...")))
         subtitle_ = requests.get(i["url"]).content
-        #subtitle_.encoding = 'utf-8'
         open(sub_file_,'wb').write(subtitle_)
 
 
