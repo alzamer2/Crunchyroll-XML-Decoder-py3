@@ -137,16 +137,6 @@ class video_hls():
                                 outfile.write(byte)
                         os.remove(os.path.join(os.path.split(self.output)[0],fname))
 
-                # for i in range (0, self.connection_n):
-                #     fname = self.output+str(i)
-                #     with open(fname, 'rb') as infile:
-                #         while True:
-                #             byte = infile.read(blocksize)
-                #             if not byte:
-                #                 break
-                #             outfile.write(byte)
-                #     os.remove(fname)
-
     def video_hls(self, uri, output, connection_n):
         import sys
         if 'idlelib.run' in sys.modules: #code to force this script to only run in console

@@ -39,10 +39,7 @@ def close_code_():
         pInfoDict = proc.as_dict(attrs=['pid', 'name', 'cmdline'])
         if pInfoDict['name'] == 'python.exe' or pInfoDict['name'] == 'pythonw.exe' :
             if len(pInfoDict['cmdline']) > 1:
-                #print(os.path.split(os.path.normpath(pInfoDict['cmdline'][1]))[0],os.path.normpath(os.path.abspath(code_dir__)))
                 if os.path.split(os.path.normpath(pInfoDict['cmdline'][1]))[0] == os.path.normpath(os.path.abspath(code_dir__)):
-                    #print(os.path.split(os.path.split(pInfoDict['cmdline'][1])[0])[1])
-                    #print(pInfoDict)
                     p = psutil.Process(pInfoDict['pid'])
                     p.terminate()
                     p.wait()
@@ -51,7 +48,6 @@ def close_code():
     while_loop = True
     while while_loop:
         while_loop = False
-        #print(while_loop)
         print('trying to close Crunchyroll-XML-Decoder-py3.......')
         for proc in psutil.process_iter():
             pInfoDict = proc.as_dict(attrs=['pid', 'name', 'cmdline'])

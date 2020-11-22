@@ -33,8 +33,6 @@ class MyLogger(object):
         print(msg)
 
 def ultimate(page_url='', seasonnum=0, epnum=0, sess_id_=''):
-    #global url1, url2, filen, title, media_id, lang1, lang2, hardcoded, forceusa, page_url2, onlymainsub
-    #global player_revision
 
     print('''
 --------------------------
@@ -77,11 +75,9 @@ Booting up...
 
     # ----------
 
-    #lang1, lang2, forcesub, forceusa, localizecookies, vquality, onlymainsub, connection_n_, proxy_ = config()
     config_ = config()
     if not os.path.lexists(config_['download_dirctory']):
         os.makedirs(config_['download_dirctory'])
-    #print(config_)
     forcesub = config_['forcesubtitle']
     if sess_id_ == '':
         cookies_ = ConfigParser()
@@ -91,47 +87,22 @@ Booting up...
         else:
             sess_id_ = cookies_.get('COOKIES', 'sess_id')
     media_id = re.findall(r'https?://www\.crunchyroll\.com/.+/.+-(\d*)',page_url)[0]
-    #htmlconfig = BeautifulSoup(gethtml(page_url), 'html')
     html_page_ = gethtml(page_url)
-    #print(re.findall(r'vilos\.config\.media = ({.*})',html_page_))
     htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})',html_page_)[0])
     htmlconfig['metadata']['series_title'] = json.loads(re.findall(r'vilos\.config\.analytics = ({.*})',html_page_)[0])['media_reporting_parent']['title']
     stream_url ={}
     stream_url_dash = {}
-    # print(htmlconfig)
     for i in htmlconfig['streams']:
         if i['format'] == 'adaptive_hls':
             stream_url.update({i['hardsub_lang']:i['url']})
         elif i['format'] == 'adaptive_dash':
             stream_url_dash.update({i['hardsub_lang']:i['url']})
-        #stream_url.update({i['hardsub_lang']: i['url']})
-    #for i in htmlconfig['subtitles']:
-    #    print(i["language"], i["url"])
-    #for i in stream_url:
-    #    print(i, stream_url[i])
-    #media_info = getxml('RpcApiVideoPlayer_GetStandardConfig', media_id)
-    #print(media_info)
-    #print(media_info['file'])
-    #print(media_info['media_metadata']['series_title'])
-    #print(media_info['media_metadata']['episode_number'])
-    #print(media_info['media_metadata']['episode_title'])
     if htmlconfig['metadata']['episode_number'] != '':
         title = '%s Episode %s - %s' % (htmlconfig['metadata']['series_title'],htmlconfig['metadata']['episode_number'], htmlconfig['metadata']['title'])
-        # print(title)
         title = clean_text(title)
-        # print(title)
     else:
         title = '%s - %s' % (htmlconfig['metadata']['series_title'], htmlconfig['metadata']['title'])
-        # print(title)
         title = clean_text(title)
-        # print(title)
-    #title: str = re.findall(r'var mediaMetadata = \{.*?name":"(.+?)",".+?\};',html_page_)[0]
-    #if len(os.path.join('export', title + '.flv')) > 255 or media_info['media_metadata']['episode_title'] is '':
-    #    title = clean_text('%s Episode %s' % (media_info['media_metadata']['series_title'], media_info['media_metadata']['episode_number']))
-    #print(config_['language2'])
-    #Loc_lang = {u'Español (Espana)': 'esES', u'Français (France)': 'frFR', u'Português (Brasil)': 'ptBR',
-    #        u'English': 'enUS', u'Español': 'esLA', u'Türkçe': 'trTR', u'Italiano': 'itIT',
-    #        u'العربية': 'arME', u'Deutsch': 'deDE', u'Русский' : 'ruRU'}
     Loc_lang = {'Espanol_Espana': 'esES',
                 'Francais': 'frFR',
                 'Portugues': 'ptBR',
@@ -145,7 +116,6 @@ Booting up...
     Loc_lang_1 = Loc_lang[config_['language']]
     Loc_lang_2 = Loc_lang[config_['language2']]
 
-    #print(Loc_lang_1,Loc_lang_2,stream_url)
     if forcesub:
         try:
             hls_url = stream_url[Loc_lang_1]
@@ -159,7 +129,6 @@ Booting up...
                 dash_url = stream_url_dash[None]
                 forcesub = False
     else:
-        # print(stream_url)
         try:
             hls_url = stream_url[None]
             dash_url = stream_url_dash[None]
@@ -171,7 +140,6 @@ Booting up...
                 hls_url = stream_url[list(stream_url)[0]]
                 dash_url = stream_url_dash[list(stream_url_dash)[0]]
 
-    #print(dash_url)
     hls_url_m3u8 = m3u8.load(hls_url)
     hls_url_parse = {}
     dash_id_parse = {}
@@ -207,9 +175,7 @@ Booting up...
     ### End stolen code ###
 
     # ----------
-    #print(vquality,hls_url)
     print(format('Now Downloading - ' + title))
-    #video_input = os.path.join("export", title + '.ts')
     if htmlconfig['metadata']['episode_number'] != '':
         video_input = dircheck([os.path.join(os.path.abspath(config_['download_dirctory']),''),
                                  clean_text(htmlconfig['metadata']['series_title']),
@@ -227,7 +193,6 @@ Booting up...
 
     download_subprocess_result = 0
     try:
-        # assert 1==2
         download_ = video_hls()
         download_subprocess_result = download_.video_hls(hls_url, video_input, config_['connection_n_'])
     except AssertionError:
@@ -236,9 +201,7 @@ Booting up...
     if download_subprocess_result != 0:
         try:
             print('It seem there is problem in HLS stream, will use DASH stream instead')
-            # assert 1==2
             download_ = dash_download()
-            # print(config_['connection_n_'],config_['video_quality'])
             download_subprocess_result = download_.download(dash_url, video_input, config_['connection_n_'], r=config_['video_quality'], abr='best')
         except:
             download_subprocess_result = 1
@@ -250,11 +213,6 @@ Booting up...
         for stream in dash_info_dict['formats']:
             if not stream['height'] == None:
                 dash_id_parse.update({stream['height']: stream['format_id']})
-        # for i in dash_info_dict['formats']:
-        #    print(i['format_id'], i['ext'], i['height'], i['tbr'], i['asr'], i['language'], i['format_note'], i['filesize'],
-        #          i['vcodec'], i['acodec'], i['format'])
-        # for i in hls_url_parse:
-        #    print(i,hls_url_parse[i])
         if config_['video_quality'] == '1080p':
             try:
                 dash_video_id = dash_id_parse[1080]
@@ -291,9 +249,6 @@ Booting up...
             return youtube_dl.YoutubeDL(*args, **kwargs)
             pass
 
-        # youtube_dl_proxy({'format': dash_video_id + ',bestaudio',
-        #                    'outtmpl': video_input[:-3] + '.%(ext)s'}).download([dash_url])
-
         if not 'idlelib.run' in sys.modules:
             with youtube_dl.YoutubeDL(
                     {'format': dash_video_id + ',bestaudio', 'outtmpl': video_input[:-3] + '.%(ext)s'}) as ydl:
@@ -305,7 +260,6 @@ with youtube_dl.YoutubeDL(
                 {'format': \''''+dash_video_id+''',bestaudio', 'outtmpl': r\''''+video_input[:-3]+'''\' + '.%(ext)s'}) as ydl:
                 ydl.download([\'\'\''''+dash_url+'''\'\'\'])
 '''
-            #print(youtube_dl_script)
             command = 'where'  # Windows
             if os.name != "nt":  # non-Windows
                 command = 'which'
@@ -334,112 +288,19 @@ with youtube_dl.YoutubeDL(
                 subprocess.call([python_path_, '-c', youtube_dl_script])
 
 
-    """
-    if not 'idlelib.run' in sys.modules:
-        #video_hls(hls_url, video_input, config_['connection_n_'])
-        try:
-            #assert 1==2
-            download_ = video_hls()
-            download_.video_hls(hls_url, video_input, config_['connection_n_'])
-        except AssertionError:
-            try:
-                print('It seem there is problem in HLS stream, will use DASH stream instead')
-                #assert 1==2
-                download_ = dash_download()
-                # print(config_['connection_n_'],config_['video_quality'])
-                download_.download(dash_url, video_input, config_['connection_n_'], r=config_['video_quality'], abr='best')
-            except:
-                print('It seem there is problem in DASH stream, will use External Library YoutubeDL instead')
-                with youtube_dl.YoutubeDL({'logger': MyLogger()}) as ydl:
-                    dash_info_dict = ydl.extract_info(dash_url, download=False)
-                for stream in dash_info_dict['formats']:
-                    if not stream['height'] == None:
-                        dash_id_parse.update({stream['height']: stream['format_id']})
-                # for i in dash_info_dict['formats']:
-                #    print(i['format_id'], i['ext'], i['height'], i['tbr'], i['asr'], i['language'], i['format_note'], i['filesize'],
-                #          i['vcodec'], i['acodec'], i['format'])
-                # for i in hls_url_parse:
-                #    print(i,hls_url_parse[i])
-                if config_['video_quality'] == '1080p':
-                    try:
-                        dash_video_id = dash_id_parse[1080]
-                    except:
-                        pass
-                elif config_['video_quality'] == '720p':
-                    try:
-                        dash_video_id = dash_id_parse[720]
-                    except:
-                        pass
-                elif config_['video_quality'] == '480p':
-                    try:
-                        dash_video_id = dash_id_parse[480]
-                    except:
-                        pass
-                elif config_['video_quality'] == '360p':
-                    try:
-                        dash_video_id = dash_id_parse[360]
-                    except:
-                        pass
-                elif config_['video_quality'] == '240p':
-                    try:
-                        dash_video_id = dash_id_parse[240]
-                    except:
-                        pass
-                with youtube_dl.YoutubeDL(
-                        {'format': dash_video_id + ',bestaudio', 'outtmpl': video_input[:-3] + '.%(ext)s'}) as ydl:
-                    ydl.download([dash_url])
 
-    else:
-        if os.path.lexists(os.path.abspath(os.path.join(".", "crunchy-xml-decoder", "hls.py"))):
-            hls_s_path = os.path.abspath(os.path.join(".", "crunchy-xml-decoder"))
-        elif os.path.lexists(os.path.abspath(os.path.join("..", "crunchy-xml-decoder", "hls.py"))):
-            hls_s_path = os.path.abspath(os.path.join("..", "crunchy-xml-decoder"))
-        else:
-            print('hls script not found')
-        hls_script = '''\
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-import sys
-sys.path.append(r"''' + hls_s_path + '''")
-from hls_ import video_hls
-
-download_ = video_hls()
-download_.video_hls("''' + hls_url + '''", r"''' + video_input + '''", ''' + str(config_['connection_n_']) + ''')
-#video_hls("''' + hls_url + '''", r"''' + video_input + '''", ''' + str(config_['connection_n_']) + ''')'''
-        # print(hls_script)
-        open(os.path.join(".", "export", "hls_script_temp.py"), "w", encoding='utf-8').write(hls_script)
-        hls_subprocess_result = subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe'),
-                                             os.path.join(".", "export", "hls_script_temp.py")])
-        if not hls_subprocess_result == 0:
-            print('It seem there is problem in HLS stream, will use DASH stream instead')
-            subprocess.call([sys.executable.replace('pythonw.exe', 'python.exe'),
-                             '-m','youtube_dl',
-                             '-f', dash_video_id+',bestaudio',
-                             '-o', video_input[:-3]+'.%(ext)s',
-                             dash_url
-                             ])
-
-
-
-        os.remove(os.path.join(".", "export", "hls_script_temp.py"))
-    """
-    #decode(page_url)
     vilos_subtitle(page_url)
     mkv_merge(video_input, config_['video_quality'], 'English')
 
 def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
     print('Starting mkv merge')
-    #lang1, lang2, forcesub, forceusa, localizecookies, vquality, onlymainsub, connection_n_, proxy_ = config()
     config_ = config()
     if defult_lang is None:
         defult_lang = config_['onlymainsub']
-    #print(os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe")))
-    #print(os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe")))
     if os.path.lexists(os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe"))):
         mkvmerge = os.path.abspath(os.path.join(".","video-engine", "mkvmerge.exe"))
     elif os.path.lexists(os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe"))):
         mkvmerge = os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe"))
-    #mkvmerge = os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe"))
     working_dir = os.path.dirname(video_input)
     working_name = os.path.splitext(os.path.basename(video_input))[0]
     filename_output = os.path.join(working_dir, working_name + '[' + pixl +'].mkv')
@@ -455,12 +316,6 @@ def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
         if file.startswith(working_name) and file.endswith(".mp4"):
             cmd = [mkvmerge, "-o", os.path.abspath(filename_output), '--language', '0:jpn', '--language', '1:jpn',
                           '-a', '1', '-d', '0', os.path.abspath(os.path.join(working_dir, file)), '--title', working_name]
-    #cmd = [mkvmerge, "-o", os.path.abspath(filename_output), '--language', '0:jpn', '--language', '1:jpn',
-    #       '-a', '1', '-d', '0', os.path.abspath(video_input), '--title', working_name]
-    #lang_iso = {'English': 'English (US)', u'Español' : u'Espa\xf1ol', u'Español (Espana)': u'Espa\xf1ol (Espa\xf1a)',
-    #            u'Français (France)': u'Fran\xe7ais (France)', u'Português (Brasil)': u'Portugu\xeas (Brasil)',
-    #            u'Italiano': 'Italiano', u'Deutsch': 'Deutsch', u'العربية': 'العربية', u'Русский': 'Русский',
-    #            u'Türkçe': 'Türkçe'}
     lang_iso = {'Espanol_Espana': u'Espa\xf1ol (Espa\xf1a)',
                 'Francais': u'Fran\xe7ais (France)',
                 'Portugues': u'Portugu\xeas (Brasil)',
@@ -475,13 +330,11 @@ def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
     defult_lang_sub = ''
     for file in os.listdir(working_dir):
         if file.startswith(working_name) and file.endswith(".ass"):
-            #print(re.findall(r'\]\[(.*)\]',file)[0], lang_iso[lang1], lang_iso[lang2], defult_lang_sub)
             if re.findall(r'\]\[(.*)\]',file)[0] == lang_iso[config_['language']]:
                 defult_lang_sub = re.findall(r'\]\[(.*)\]',file)[0]
             if defult_lang_sub == '':
                 if re.findall(r'\]\[(.*)\]', file)[0] == lang_iso[config_['language2']]:
                     defult_lang_sub = re.findall(r'\]\[(.*)\]', file)[0]
-    #print(defult_lang_sub)
     for file in os.listdir(working_dir):
         if file.startswith(working_name) and file.endswith(".m4a"):
             cmd += ['--language', '0:jpn',
@@ -489,7 +342,6 @@ def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
                     '--forced-track', '0:yes',
                     os.path.abspath(os.path.join(working_dir, file))]
         if file.startswith(working_name) and file.endswith(".ass"):
-            #print(os.path.abspath(os.path.join(working_dir,file)))
             cmd += ['--language', '0:' + re.findall(r'\[(.*)\]\[',file)[0],
                     '--sub-charset', '0:UTF-8',
                     '--default-track', '0:yes' if re.findall(r'\]\[(.*)\]',file)[0] == defult_lang_sub else '0:no',
@@ -497,36 +349,14 @@ def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
                     '--track-name', '0:' + re.findall(r'\]\[(.*)\]',file)[0], '-s', '0',
                     os.path.abspath(os.path.join(working_dir,file))]
 
-                #cmd.extend(['--language', '0:' + sublangc.replace('spa_spa','spa')])
-
-                #if sublangc == sublang:
-                #    cmd.extend(['--default-track', '0:yes'])
-                #else:
-                #    cmd.extend(['--default-track', '0:no'])
-                #if forcesub:
-                #    cmd.extend(['--forced-track', '0:yes'])
-                #else:
-                #    cmd.extend(['--forced-track', '0:no'])
-
-                #cmd.extend(['--track-name', '0:' + sublangn])
-                #cmd.extend(['-s', '0'])
-                #cmd.append(filename_subtitle)
-    #print(cmd)
     cmd_exitcode = 2
-    #if os.name == 'nt':
-    #    cmd_exitcode = subprocess.call(cmd)
-    #else:
-    #    cmd_exitcode = subprocess.call(['wine']+cmd)
     if os.name != 'nt':
         cmd = ['wine']+cmd
     cmd_exitcode = subprocess.call(cmd)
-    #print(cmd_exitcode)
-    #print(cmd)
     if cmd_exitcode != 0:
         print('fixing TS file')
         for file in os.listdir(working_dir):
             if file.startswith(working_name) and file.endswith(".ts"):
-                #os.path.abspath(os.path.join(working_dir, file))
                 unix_pre = []
                 if os.name != 'nt':
                     unix_pre += ['wine']
@@ -536,27 +366,16 @@ def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
                     cmd[11] = cmd[11].replace('.ts','_fix.ts')
                 else:
                     cmd[12] = cmd[12].replace('.ts','_fix.ts')
-                #print(cmd)
                 cmd_exitcode = subprocess.call(cmd)
-                #print(cmd_exitcode)
                 
-    #subprocess.Popen(cmd.encode('ascii', 'surrogateescape').decode('utf-8'))
     print('Merge process complete')
     print('Starting Final Cleanup')
-    #os.remove(os.path.abspath(video_input))
     if not keep_files:
         for file in os.listdir(working_dir):
             if file.startswith(working_name) and (file.endswith(".ass") or file.endswith(".m4a") or file.endswith(".mp4") or file.endswith(".ts")):
                 os.remove(os.path.abspath(os.path.join(working_dir,file)))
                 
     
-# def clean_text(text_):
-#     ### Taken from http://stackoverflow.com/questions/6116978/python-replace-multiple-strings and improved to include the backslash###
-#     rep = {' / ': ' - ', '/': ' - ', ':': '-', '?': '.', '"': "''", '|': '-', '&quot;': "''", 'a*G': 'a G', '*': '#',
-#            r'\u2026': '...', r' \ ': ' - ', u'”': "''"}
-#     rep = dict((re.escape(k), v) for k, v in rep.items())
-#     pattern = re.compile("|".join(rep.keys()))
-#     return unidecode(pattern.sub(lambda m: rep[re.escape(m.group(0))], text_))
 
     
 
@@ -581,4 +400,3 @@ if __name__ == '__main__':
             pass
     ultimate(page_url, seasonnum, epnum)
     #mkv_merge('..\\export\\The Rising of the Shield Hero - 1 - The Shield Hero.ts','480p','ara')
-    input()

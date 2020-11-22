@@ -8,14 +8,6 @@ import subprocess
 import zipfile
 import math
 
-'''
-try:
-    from pip._internal import main as pip_main
-except:
-    from pip import main as pip_main
-    pip_main(['install', '--quiet', '-U', 'pip', 'wheel', 'setuptools'])
-    from pip._internal import main as pip_main
-'''
 try:
     from colorama import Fore, Style, init
     init()
@@ -35,7 +27,6 @@ def testing_external_moudules_(code_version=''):
     python_version_ = re.findall('\d\.\d\.?\d?',sys.version)[0]
     print(idle_cmd_txt_fix("python version=" + '\x1b[32m' + '.'.join([str(i) for i in sys.version_info[:3]]) + " " + python_bit_ + '\x1b[0m'))
     print(idle_cmd_txt_fix("OS Version=" + '\x1b[32m' + platform.platform().replace("-", " ") + '\x1b[0m'))
-    #print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + os.environ['PROCESSOR_ARCHITECTURE'] + '\x1b[0m'))
     print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + platform.machine() + '\x1b[0m'))
     print(idle_cmd_txt_fix("Code Version=" + '\x1b[32m' + '.'.join([str(i) for i in code_version[1][:2]]) + ' rev.'+ str(code_version[1][2]) + '\x1b[0m'+
                            ('\x1b[32m' +' (Up-To-Date)'+ '\x1b[0m' if code_version[0] <= code_version[1] else '\x1b[31m' +' (Need to Update the Code)'+ '\x1b[0m')))
@@ -68,12 +59,6 @@ def testing_external_moudules_(code_version=''):
     except ImportError:
         print(idle_cmd_txt_fix('Cryptography : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing Cryptography...'))
         pip_download_.append('cryptography==2.4.2')
-    # try: for now will keep it and remove it later
-    #     #     from cfscrape import create_scraper
-    #     #     print(idle_cmd_txt_fix('Cfscrape : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    #     # except ImportError:
-    #     #     print(idle_cmd_txt_fix('Cfscrape : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+ ', Installing Cfscrape...'))
-    #     #     pip_download_.append('cfscrape')
     try:
         import cloudscraper
         print(idle_cmd_txt_fix('cloudscraper : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
@@ -92,6 +77,12 @@ def testing_external_moudules_(code_version=''):
     except ImportError:
         print(idle_cmd_txt_fix('youtube_dl : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing youtube_dl...'))
         pip_download_.append('youtube_dl')
+    try:
+        import socks
+        print(idle_cmd_txt_fix('requests[socks] : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
+    except ImportError:
+        print(idle_cmd_txt_fix('requests[socks] : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing requests[socks]...'))
+        pip_download_.append('requests[socks]')
     try:
         from bs4 import BeautifulSoup
         print(idle_cmd_txt_fix('BeautifulSoup : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
@@ -117,14 +108,6 @@ def testing_external_moudules_(code_version=''):
         print(idle_cmd_txt_fix('psutil : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing psutil...'))
         pip_download_.append('psutil')
     python_version_c = re.findall('(\d)\.(\d\.?\d?)',sys.version)[0]
-    #if int(python_version_c[0]) >= 3:
-    #    if float(python_version_c[1]) >= 5.3:
-    #        try:
-    #             from proxybroker import Broker
-    #             print(idle_cmd_txt_fix('proxybroker : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    #        except ImportError:
-    #             print(idle_cmd_txt_fix('proxybroker : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing proxybroker...'))
-    #             pip_download_.append('proxybroker')
     if not pip_download_ == []:
         '''
         if not 'idlelib.run' in sys.modules:
@@ -149,7 +132,6 @@ def testing_external_moudules_(code_version=''):
     if not os.path.lexists(os.path.join(bin_dir__,"mkvmerge.exe")):
         import wget
         print(idle_cmd_txt_fix('mkvmerge : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading mkvmerge...'))
-        #wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge.zip',bin_dir__)
         if platform.machine().endswith('64'):
             wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge_win64.zip',bin_dir__)
             unzip_(os.path.join(bin_dir__,"mkvmerge_win64.zip"), bin_dir__)
@@ -163,15 +145,6 @@ def testing_external_moudules_(code_version=''):
         wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/ffmpeg.zip',bin_dir__)
         unzip_(os.path.join(bin_dir__,"ffmpeg.zip"), bin_dir__)
         os.remove(os.path.join(bin_dir__,"ffmpeg.zip"))
-    ## at momment rtmpdump Deprecation wil remove in the future
-    '''
-    if not os.path.exists(bin_dir__+"\\rtmpdump.exe"):
-        import wget
-        print(idle_cmd_txt_fix('rtmpdump : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading rtmpdump...'))
-        wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/rtmpdump.zip',bin_dir__)
-        unzip_(bin_dir__ + "\\rtmpdump.zip", bin_dir__)
-        os.remove(bin_dir__ + "\\rtmpdump.zip")
-    '''
 
 
 
