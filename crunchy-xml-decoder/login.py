@@ -231,17 +231,45 @@ def create_sess_id(usa_=False, auth = ''):
     
 
   else:
-    sess_id_data = {'session_id': ''}
+    sess_id_data = None
     if config()['proxy'] != '':
       proxy_ = get_proxy(['HTTPS'], [config()['proxy']])
-      try:
-        proxies = {'http': proxy_[0]}
-      except:
+      #print(proxy_)
+      #input()
+      
+      if len(proxy_) > 0:
+        for proxy_ip in proxy_:
+          #print(proxy_ip)
+          proxies = {'http': proxy_ip}
+          try:
+            #print('trying {}'.format(proxy_ip))
+            proxy_session = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload, timeout=180)
+            #print('proxy {} respond is: {}'.format(proxy_ip, proxy_session))
+            #print(proxy_session.text)
+            if proxy_session.json()['data']['country_code'] == config()['proxy']:
+              sess_id_data = proxy_session.json()['data']
+              break
+          except:
+            continue
+        
+        #print(sess_id_data)
+      else:
         proxies = {}
-    try:
-      sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload).json()['data']
-    except requests.exceptions.ProxyError:
+        try:
+          sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload).json()['data']
+        except requests.exceptions.ProxyError:
+          sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', params=payload).json()['data']
+        
+      #try:
+      #  proxies = {'http': proxy_[0]}
+      #except:
+      #  proxies = {}
+    if sess_id_data is None:
       sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', params=payload).json()['data']
+    #try:
+    #  sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', proxies=proxies, params=payload).json()['data']
+    #except requests.exceptions.ProxyError:
+    #  sess_id_data = session.post('http://api.crunchyroll.com/start_session.0.json', params=payload).json()['data']
     #print(sess_id_data)
   returned_data = {'sess_id' : sess_id_data['session_id'], 'device_id': device_id, 'proxies': proxies, 'country_code': sess_id_data['country_code']}
     
