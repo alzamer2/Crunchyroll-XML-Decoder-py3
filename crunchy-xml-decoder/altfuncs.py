@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import re
 import sys
-from urllib.parse import urlparse
+#from urllib.parse import urlparse
 from configparser import ConfigParser
 import requests
 import cloudscraper
@@ -22,6 +22,8 @@ import stat
 import locale
 import io
 
+import browser_cookie3
+import subprocess
 altfuncs_print_coding = False
 from io import BytesIO
 
@@ -408,18 +410,52 @@ class FileAdapter(BaseAdapter):
         pass
 
 
+def import_login_from_browser(browser = ''):
+  url = 'http://www.crunchyroll.com'
+  if browser.lower() == 'firfox':
+    cookies_j = browser_cookie3.firefox(domain_name='.'.join(['']+urlparse(url).netloc.split('.')[-2:]))
+    if len(cookies_j._cookies) == 0:
+      cookies_j = browser_cookie3.firefox()
+  if browser.lower() == 'chrome':
+    cookies_j = browser_cookie3.chrome(domain_name='.'.join(['']+urlparse(url).netloc.split('.')[-2:]))
+    if len(cookies_j._cookies) == 0:
+      cookies_j = browser_cookie3.chrome()
+  else:
+    raise Exception('specify the browser to import login from')
+  cookies = {}
+  for cookie_item in cookies_j:
+    cookies[cookie_item.name]=cookie_item.value
+    #if cookie_item.name != 'sess_id' and cookie_item.name != 'session_id' and cookie_item.name != 'c_visitor':
+    #if not cookie_item.name in ['sess_id', 'session_id', 'c_visitor', '__cf_bm', '__cfduid']:
+      #cookies[cookie_item.name]=cookie_item.value
+  return cookies
+
 def gethtml(url, req='', headers='', interpreter='nodejs'):
     if interpreter == 'nodejs':
         try:
             subprocess.call(['node','-v'],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             session = cloudscraper.create_scraper(interpreter=interpreter)
+            #print('node is here')
         except FileNotFoundError:
             session = cloudscraper.create_scraper()
     session.mount('file://', LocalFileAdapter())
     cookies_ = ConfigParser()
     cookies_.read('cookies')
-    session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id')
-    session.cookies['session_id'] = cookies_.get('COOKIES', 'sess_id')
+    import_from_browser = 'chrome'
+    if import_from_browser:
+        #if import_from_browser == 'chrome':
+        #    headers = {'Referer': 'http://crunchyroll.com/', 'Host': 'www.crunchyroll.com',
+        #           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36'}
+        #if import_from_browser == 'firfox':
+        #    headers = {'Referer': 'http://crunchyroll.com/', 'Host': 'www.crunchyroll.com',
+        #           'User-Agent': ''}
+        browser_cookies = import_login_from_browser(import_from_browser)
+        #for cookie_ in browser_cookies:
+        session.cookies['session_id'] = browser_cookies['session_id']
+    else:
+        session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id')
+        session.cookies['session_id'] = cookies_.get('COOKIES', 'sess_id')
+    #print(session.cookies)
     config_ = config()
     if config_['forceusa']:
         session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id_usa')
@@ -439,6 +475,7 @@ def gethtml(url, req='', headers='', interpreter='nodejs'):
                    'User-Agent': 'Mozilla/5.0  Windows NT 6.1; rv:26.0 Gecko/20100101 Firefox/26.0'}
     res = session.get(url, params=req, headers=headers)
     res.encoding = 'UTF-8'
+    open('html.html','wb').write(res.content)
     return res.text
 
 

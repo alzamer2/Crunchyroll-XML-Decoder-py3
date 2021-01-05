@@ -370,6 +370,7 @@ def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
                 
     print('Merge process complete')
     print('Starting Final Cleanup')
+    #keep_files = True
     if not keep_files:
         for file in os.listdir(working_dir):
             if file.startswith(working_name) and (file.endswith(".ass") or file.endswith(".m4a") or file.endswith(".mp4") or file.endswith(".ts")):

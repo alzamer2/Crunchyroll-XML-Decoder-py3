@@ -12,6 +12,9 @@ import time
 import cloudscraper
 import re
 from cryptography.fernet import Fernet
+#import browser_cookie3
+#from urllib.parse import urlparse
+#from http.cookiejar import Cookie
 
 import subprocess
 
@@ -28,41 +31,8 @@ except:
 from altfuncs import config
 from proxy_cr import get_proxy
 
-def getuserstatus(sess_id_renew = False, sess_id = ''):
-    """
-    status = 'Guest'
-    user1 = 'Guest'
-    sess_id_usa = ''
+def getuserstatus(sess_id_renew = False, sess_id = '',export_sess_id=False):
     
-    device_id = ''
-    device_id_usa = ''
-    auth = ''
-    auth2 = ''
-    session = cloudscraper.create_scraper(interpreter='nodejs')
-    #https://www.crunchyroll.com/acct/membership
-    cookies_ = ConfigParser()
-    cookies_.read('cookies')
-    if sess_id =='':
-      device_id = cookies_.get('COOKIES', 'device_id')
-      device_id_usa = cookies_.get('COOKIES', 'device_id_usa')
-      sess_id_usa = cookies_.get('COOKIES', 'sess_id_usa')
-      sess_id = cookies_.get('COOKIES', 'sess_id')
-      auth = cookies_.get('COOKIES', 'auth')
-      if 'auth2' in cookies_.options('COOKIES'):
-        auth2 = cookies_.get('COOKIES', 'auth2')
-    checkid = session.get('https://www.crunchyroll.com/acct/membership')
-    username_check = re.findall('''<li class="username">.*?\n.*?<a href="/user/.+?" token="topbar">.*?\n +(.+?)\n.*?</a>''',checkid.text)
-    print(username_check)
-    if username_check:
-      user1 = username_check[0]
-    status_check = re.findall('''<table class="acct-membership-status">.*?\n.*?<tr>.*?\n.*?\
-<th>Status:</th>.*?\n.*?<td>(.+?)</td>.*?\n.*?</tr>.*?\n.*?</table>''',checkid.text)
-    if status_check:
-      status = status_check[0]
-    print(status, user1)
-    return [status, user1]
-      
-"""
     status = 'Guest'
     user1 = 'Guest'
     sess_id_usa = ''
@@ -104,34 +74,8 @@ def getuserstatus(sess_id_renew = False, sess_id = ''):
       re_username, re_password = extrct_auth2(auth2)
       re_login_status = login(re_username, re_password)
       return re_login_status
-      """
 
-      generate_sess_id = create_sess_id()
-      sess_id = generate_sess_id['sess_id']
-      device_id = generate_sess_id['device_id']
-      #proxies = generate_sess_id['proxies']
-      #generate_sess_id['country_code'] = 'JO'
-      if generate_sess_id['country_code'] != 'US' and  config()['forceusa']:
-        #print('us seesss')
-        generate_sess_id_usa = create_sess_id(True)
-        sess_id_usa = generate_sess_id_usa['sess_id']
-        device_id_usa = generate_sess_id_usa['device_id']
 
-      checkusaid = requests.get('http://api.crunchyroll.com/start_session.0.json?session_id='+sess_id).json()
-      print('test3')
-      print(checkusaid)
-      cookies_out = '''\
-[COOKIES]
-device_id = {}
-device_id_usa = {}
-sess_id = {}
-sess_id_usa = {}
-auth = {}
-'''.format(device_id, device_id_usa, sess_id, sess_id_usa, auth)
-        # open("cookies", "w").write('[COOKIES]\nsess_id = '+sess_id_+'\nsess_id_usa = '+sess_id_usa+'\nauth = '+auth)
-      open("cookies", "w").write(cookies_out)
-
-    """
     if not checkusaid['data']['user'] is None:
       user1 = checkusaid['data']['user']['username']
       if checkusaid['data']['user']['premium'] == '':
@@ -142,7 +86,10 @@ auth = {}
         else:
           status = 'Premium'
     
-    return [status, user1]
+    if export_sess_id:
+      return [sess_id, sess_id_usa]
+    else:
+      return [status, user1]
 
         
 

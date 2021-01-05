@@ -2,8 +2,12 @@
 * 
 * Clean Up for code
 * Fix proxy issue 
-* 
-* 
+* add key word argment to hls dowanload code
+* fix some printing issue in progress bar
+* add retry to hls download code
+* add open mpd file to dash download code
+* fix base url problem in dash download code
+* add retry to dash download code
 * 
 * 
 * 
