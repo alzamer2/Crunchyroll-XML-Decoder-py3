@@ -21,7 +21,7 @@ blocksize = 16384
 
 class video_hls():
     
-    ef __init__(self):
+    def __init__(self):
         self.size = 0
         self.offset = 0
         self.part_size = {}
