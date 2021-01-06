@@ -107,6 +107,12 @@ def testing_external_moudules_(code_version=''):
     except ImportError:
         print(idle_cmd_txt_fix('psutil : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing psutil...'))
         pip_download_.append('psutil')
+    try:
+        import browser_cookie3
+        print(idle_cmd_txt_fix('browser_cookie3 : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
+    except ImportError:
+        print(idle_cmd_txt_fix('browser_cookie3 : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing browser_cookie3...'))
+        pip_download_.append('browser_cookie3')
     python_version_c = re.findall('(\d)\.(\d\.?\d?)',sys.version)[0]
     if not pip_download_ == []:
         '''
