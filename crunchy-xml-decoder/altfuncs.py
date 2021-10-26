@@ -22,10 +22,23 @@ import stat
 import locale
 import io
 
+from bs4 import BeautifulSoup
 import browser_cookie3
 import subprocess
 altfuncs_print_coding = False
 from io import BytesIO
+
+####### customs print
+org_print = print
+
+def print_idle_cmd_txt_fix(value='', *args, **kwargs):
+    if isinstance(value, str):
+        if 'idlelib.run' in sys.modules:
+            value = re.sub('\\x1b.*?\[\d*\w','',value)
+    org_print(value, *args, **kwargs)
+
+print = print_idle_cmd_txt_fix
+#################
 
 def config_old():
     configr = ConfigParser()
@@ -430,7 +443,7 @@ def import_login_from_browser(browser = ''):
       #cookies[cookie_item.name]=cookie_item.value
   return cookies
 
-def gethtml(url, req='', headers='', interpreter='nodejs'):
+def gethtml(url, req='', headers='', interpreter='nodejs', return_form='text'):
     if interpreter == 'nodejs':
         try:
             subprocess.call(['node','-v'],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -475,8 +488,11 @@ def gethtml(url, req='', headers='', interpreter='nodejs'):
                    'User-Agent': 'Mozilla/5.0  Windows NT 6.1; rv:26.0 Gecko/20100101 Firefox/26.0'}
     res = session.get(url, params=req, headers=headers)
     res.encoding = 'UTF-8'
-    open('html.html','wb').write(res.content)
-    return res.text
+    #open('html.html','wb').write(res.content)
+    if return_form == 'respond':
+        return res
+    else:
+        return res.text
 
 
 def getxml(req, med_id):
@@ -511,8 +527,113 @@ def getxml(req, med_id):
         xml_ = etree.fromstring(html)
         return xml_
 
+class autocatch():
+    def __init__(self,url=None):
+        if url is None:
+            url = input(u'indicate the url :> ')
+        url ='{}{}{}'.format(*list(re.findall(r'((?:https?://)?(?:www\.)?crunchyroll\.com/)(?:[\w-]{2,5}/)?(.+?)(?=/|$)',url)[0])+['?skip_wall=1'])
+        html = self.gethtml(url)
+        #html_tree = etree.fromstring(html, etree.HTMLParser())
 
-def autocatch(url=None):
+        links = self.getlinks(html)
+        sortedlinks = self.sortlinks(links)
+        self.choselinks(sortedlinks)
+        
+    def gethtml(self, URL):
+        html_text = gethtml(URL)
+        #html_text = open(r"D:\+Jwico\Manual & Catalog\a\l\z\project\Crunchyroll-XML-Decoder-py3-5-\crunchy-xml-decoder\military.html",'rb').read().decode()
+        return html_text
+
+    def getlinks(self,html_text):
+        soup = BeautifulSoup(html_text, "html.parser")
+        links_dict = dict()
+        #for dropdown in soup.find('ul',class_="list-of-seasons cf").find_all('a',class_="season-dropdown"):
+        #    #print(dropdown['title'])
+        #    links_dict[dropdown['title']] = list()
+        #    for eps in dropdown.parent.find_all('a',class_="portrait-element")[::-1]:
+        #        links_dict[dropdown['title']] += [f'http://www.crunchyroll.com{eps["href"]}']
+        for season in soup.find('ul',class_="list-of-seasons cf").find_all('li',class_="season"):
+            if season.find('a',class_="season-dropdown"):
+                season_title = season.find('a',class_="season-dropdown")['title']
+            else:
+                season_title = soup.find(id="showview-content-header").find("h1").text.strip()
+            links_dict[season_title] = list()
+            for eps in season.find_all('a',class_="portrait-element")[::-1]:
+                links_dict[season_title] += [f'http://www.crunchyroll.com{eps["href"]}']
+        return links_dict
+
+    def sortlinks(self, links_dict):
+        sorted_keys = list()
+        sorted_dict = list()
+        sorted_dub_temp = dict()
+        sorted_keys_temp = list(links_dict.keys())
+        sorted_keys_temp.sort()
+        for key in sorted_keys_temp:
+            if not re.search(r"\((?:Russian|.+ Dub)\)",key):
+                sorted_keys += [key]
+        for key in sorted_keys_temp:
+            check_key = re.search(r"\((?:Russian|.+ Dub)\)",key)
+            if check_key:
+                if not check_key.group(0) in sorted_dub_temp:
+                    sorted_dub_temp[check_key.group(0)] = list()
+                sorted_dub_temp[check_key.group(0)] += [key]
+        for key in sorted_dub_temp:
+            sorted_dub_temp[key].sort()
+
+        for value in sorted_dub_temp.values():
+            for i in value:
+                sorted_keys += [i]
+
+        for key in sorted_keys:
+            sorted_dict += [(key, links_dict[key])]
+        return sorted_dict
+
+    def choselinks(self, links_dict):
+        done_chossing = False
+        index_chose = dict()
+        while not done_chossing:
+            for index_,item_ in enumerate(links_dict):
+                #index_chose += [index_]
+                if not index_ in index_chose:
+                    index_chose[index_] = False
+                pre_item = ''
+                suf_item = ''
+                if index_chose[index_]:
+                    pre_item = '\033[30;42m'
+                    suf_item = '\033[m'
+                print_line =f'{index_+1} - {pre_item}{item_[0]}{suf_item}'
+                if 'idlelib.run' in sys.modules:
+                    print_line = re.sub(r'\x1b.*?\[\d*(?:;\d*)?\w','**',print_line)
+                print(print_line)
+            selected_index = input(r'select which Season/Dub to autocatch(press any key to continue):>')
+            
+            #print(selected_index)
+            if selected_index.isdigit():
+                if int(selected_index)-1 in index_chose:
+                    index_chose[int(selected_index)-1] = not index_chose[int(selected_index)-1]
+                    print('\033[A'*(len(links_dict)+1), end='')
+                    continue
+            #print(index_chose)
+            if not os.path.exists(r"queue.txt"):
+                start_line = u'#the any line that has hash before the link will be skiped\n'
+            else:
+                start_line = None
+            with open(r"queue.txt", "a") as queue_fp:
+                if start_line:
+                    queue_fp.write(start_line)
+                for k,v in index_chose.items():
+                    if v:
+                        #print(links_dict[k][1][0])
+                        for episode_link in links_dict[k][1]:
+                            print(episode_link, file = queue_fp)
+            done_chossing = True
+	
+    
+    
+        
+
+        
+def autocatch_old(url=None):
     if url is None:
         url = input(u'indicate the url : ')
     url = ''.join(re.findall(r'(https?://www\.crunchyroll\.com/)(?:[\w-]{2,5}/)?(.+?)(?=/|$)',url)[0])+'?skip_wall=1'
@@ -589,8 +710,8 @@ def vilos_subtitle(page_url_='', one_sub=None):
         os.makedirs(config_['download_dirctory'])
     if page_url_ == '':
         page_url_ = input('Please enter Crunchyroll video URL:\n')
-    if not re.findall(r'https?://www\.crunchyroll\.com/.+/.+-(\d*)', page_url_):
-        print(idle_cmd_txt_fix("\x1b[31m" + "ERROR: Invalid URL." + "\x1b[0m"))
+    if not re.findall(r'(?:(?:https?://)?www\.)?crunchyroll\.com/(?:.+/.+-|media-)(\d*)', page_url_):
+        print("\x1b[31m" + "ERROR: Invalid URL." + "\x1b[0m")
         exit()
     html_page_ = gethtml(page_url_)
     htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})', html_page_)[0])
@@ -643,18 +764,18 @@ def vilos_subtitle(page_url_='', one_sub=None):
                                   '.ass'],
                                  ['True', 'True', 1, 'True', 'False', 'True'], 240)
         try:
-            print(idle_cmd_txt_fix("Attempting to download " + '\x1b[32m' + lang_iso[i["language"]] + '\x1b[0m' + " subtitle..."))
+            print("Attempting to download " + '\x1b[32m' + lang_iso[i["language"]] + '\x1b[0m' + " subtitle...")
         except:
-            print(unidecode(idle_cmd_txt_fix("Attempting to download " + '\x1b[32m' + lang_iso[i["language"]] + '\x1b[0m' + " subtitle...")))
+            print(unidecode("Attempting to download " + '\x1b[32m' + lang_iso[i["language"]] + '\x1b[0m' + " subtitle..."))
         subtitle_ = requests.get(i["url"]).content
         open(sub_file_,'wb').write(subtitle_)
 
 
 
-def idle_cmd_txt_fix(print_text):
-    if 'idlelib.run' in sys.modules:
-        print_text = re.sub(r'\x1b.*?\[\d*\w','',print_text)
-    return print_text
+#def idle_cmd_txt_fix(print_text):
+#    if 'idlelib.run' in sys.modules:
+#        print_text = re.sub(r'\x1b.*?\[\d*\w','',print_text)
+#    return print_text
 
 def clean_text(text_):
     ### Taken from http://stackoverflow.com/questions/6116978/python-replace-multiple-strings and improved to include the backslash###

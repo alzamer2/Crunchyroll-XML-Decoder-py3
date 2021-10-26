@@ -109,7 +109,8 @@ def queueu(queuepath):
         for i, line in enumerate(lines):
             if line[0] != '#' and not line_was_excuted:
                 #print(line.strip())
-                ultimate(line.strip(), '', '')
+                #ultimate(line.strip(), '', '')
+                ultimate_(line.strip())
                 queueu = [i,  '#'+line]
                 line_was_excuted = True
         if line_was_excuted:
@@ -119,6 +120,9 @@ def queueu(queuepath):
             continue
         else:
             break
+def ultimate_(*arg,**kwarg):
+    ultimate_class = ultimate()
+    ultimate_class.download(*arg,**kwarg)
 
 def coding_debug(coding_var='001111111'):
     # this is function for debuging while codine
@@ -281,7 +285,7 @@ menu_test.add_multiselection_menue_('vquality', 'Video Quality:',vquality_sub, q
 menu_test.add_multiselection_menue_('language1', 'Language:', lang1_sub, lang_list_t,parent_='setting')
 menu_test.add_multiselection_menue_('language2', 'Language:', lang2_sub, lang_list_t,parent_='setting')
 
-menu_test.add_function('Main','Download Anime',ultimate)
+menu_test.add_function('Main','Download Anime',ultimate_)
 menu_test.add_function('Main','Download Subtitle only',altfuncs.vilos_subtitle)
 menu_test.add_function('Main','Login',login_t,reposition=True)
 menu_test.add_function('Main','Login As Guest',login_t,['',''],reposition=True)

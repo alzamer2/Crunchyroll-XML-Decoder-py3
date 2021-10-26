@@ -20,9 +20,11 @@ from configparser import ConfigParser
 import json
 import m3u8
 import youtube_dl
+import winreg
 # ----------
 
 class MyLogger(object):
+    
     def debug(self, msg):
         pass
 
@@ -32,267 +34,285 @@ class MyLogger(object):
     def error(self, msg):
         print(msg)
 
-def ultimate(page_url='', seasonnum=0, epnum=0, sess_id_=''):
+class Cloudflare(Exception):
+    #print('Cloudflare was detected')
+    #raise when Cloudflare returend
+    pass
 
-    print('''
---------------------------
----- Start New Export ----
---------------------------
+class ultimate():
 
-CrunchyRoll Downloader Toolkit DX v0.98b 
+    def __init__(self):
+        self.intro()
+        self.page_url = ''
+        self.sess_id_ = ''
+        self.media_id = int()
+        self.config_dict = config()
+        self.htmlconfig = dict()
+        self.stream_url_hls = dict()
+        self.stream_url_dash = dict()
+        self.title = ''
+        self.Loc_lang_1 = None
+        self.Loc_lang_2 = None
+        self.video_output = ''
+        self.retries = 5
 
-Crunchyroll hasn't changed anything.
+        if not os.path.lexists(self.config_dict['download_dirctory']):
+            os.makedirs(self.config_dict['download_dirctory'])
 
-If you don't have a premium account, go and sign up for one now. It's well worth it, and supports the animators.
+    def intro(self):
+        lines = ['--------------------------',
+                 '---- Start New Export ----',
+                 '--------------------------',
+                 'CrunchyRoll Downloader Toolkit DX v0.98b',
+                 "Crunchyroll hasn't changed anything.",
+                 '',
+                 "If you don't have a premium account, go and sign up for one now. It's well worth it, and supports the animators.",
+                 '',
+                 '----------',
+                 'Booting up...']
+        for i in lines:
+            print(i)
 
-----------
-Booting up...
-''')
-    if page_url == '':
-        page_url = input('Please enter Crunchyroll video URL:\n')
-        #page_url = 'https://www.crunchyroll.com/the-rising-of-the-shield-hero/episode-11-catastrophe-returns-781158'
-        #page_url = 'http://www.crunchyroll.com/military/episode-1-the-mission-begins-668503'
-        #page_url = 'https://www.crunchyroll.com/mob-psycho-100/episode-11-guidance-psychic-sensor-780930'
-	
-    try:
-        int(page_url)
-        page_url = 'http://www.crunchyroll.com/media-' + page_url
-    except ValueError:
-        if not re.findall(r'https?://', page_url):
-            page_url = 'http://' + page_url
+    def download_episode(self):
+        html_page_resp = gethtml(self.page_url, return_form = 'respond')
 
-        '''
-        try:
-            int(page_url[-6:])
-        except ValueError:
-            if bool(seasonnum) and bool(epnum):
-                page_url = altfuncs.vidurl(page_url, seasonnum, epnum)
-            elif bool(epnum):
-                page_url = altfuncs.vidurl(page_url, 1, epnum)
-            else:
-                page_url = altfuncs.vidurl(page_url, False, False)
-        '''
+        if (html_page_resp.status_code in (403, 503, 429)  #check if Cloudflare was bypassed
+        and html_page_resp.headers.get("Server", "").startswith("cloudflare")
+        and (b"jschl_vc" in html_page_resp.content or b"jschl_answer" in html_page_resp.content or b"/cdn-cgi/l/chk_captcha" in html_page_resp.content)):
+            raise Cloudflare('Attention Required! | Cloudflare')
 
-    # ----------
+        html_page_ = html_page_resp.text
 
-    config_ = config()
-    if not os.path.lexists(config_['download_dirctory']):
-        os.makedirs(config_['download_dirctory'])
-    forcesub = config_['forcesubtitle']
-    if sess_id_ == '':
-        cookies_ = ConfigParser()
-        cookies_.read('cookies')
-        if config_['forceusa']:
-            sess_id_ = cookies_.get('COOKIES', 'sess_id_usa')
+        self.htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})',html_page_)[0])
+        self.htmlconfig['metadata']['series_title'] = json.loads(re.findall(r'vilos\.config\.analytics = ({.*})',html_page_)[0])['media_reporting_parent']['title']
+
+        for i in self.htmlconfig['streams']:
+            if i['format'] == 'adaptive_hls':
+                self.stream_url_hls.update({i['hardsub_lang']:i['url']})
+            elif i['format'] == 'adaptive_dash':
+                self.stream_url_dash.update({i['hardsub_lang']:i['url']})
+
+        if self.htmlconfig['metadata']['episode_number'] != '':
+            self.title = '{s_title} Episode {ep} - {ep_title}'.format(s_title=self.htmlconfig['metadata']['series_title'],
+                                                                 ep=self.htmlconfig['metadata']['episode_number'],
+                                                                 ep_title=self.htmlconfig['metadata']['title'])
         else:
-            sess_id_ = cookies_.get('COOKIES', 'sess_id')
-    media_id = re.findall(r'https?://www\.crunchyroll\.com/.+/.+-(\d*)',page_url)[0]
-    html_page_ = gethtml(page_url)
-    htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})',html_page_)[0])
-    htmlconfig['metadata']['series_title'] = json.loads(re.findall(r'vilos\.config\.analytics = ({.*})',html_page_)[0])['media_reporting_parent']['title']
-    stream_url ={}
-    stream_url_dash = {}
-    for i in htmlconfig['streams']:
-        if i['format'] == 'adaptive_hls':
-            stream_url.update({i['hardsub_lang']:i['url']})
-        elif i['format'] == 'adaptive_dash':
-            stream_url_dash.update({i['hardsub_lang']:i['url']})
-    if htmlconfig['metadata']['episode_number'] != '':
-        title = '%s Episode %s - %s' % (htmlconfig['metadata']['series_title'],htmlconfig['metadata']['episode_number'], htmlconfig['metadata']['title'])
-        title = clean_text(title)
-    else:
-        title = '%s - %s' % (htmlconfig['metadata']['series_title'], htmlconfig['metadata']['title'])
-        title = clean_text(title)
-    Loc_lang = {'Espanol_Espana': 'esES',
-                'Francais': 'frFR',
-                'Portugues': 'ptBR',
-                'English': 'enUS',
-                'Espanol': 'esLA',
-                'Turkce': 'trTR',
-                'Italiano': 'itIT',
-                'Arabic': 'arME',
-                'Deutsch': 'deDE',
-                'Russian' : 'ruRU'}
-    Loc_lang_1 = Loc_lang[config_['language']]
-    Loc_lang_2 = Loc_lang[config_['language2']]
+            self.title = '{s_title} - {ep_title}'.format(s_title=self.htmlconfig['metadata']['series_title'],
+                                                    ep_title=self.htmlconfig['metadata']['title'])
+        self.title = clean_text(self.title)
 
-    if forcesub:
-        try:
-            hls_url = stream_url[Loc_lang_1]
-            dash_url = stream_url_dash[Loc_lang_1]
-        except:
+        Loc_lang = {'Espanol_Espana': 'esES',
+                    'Francais': 'frFR',
+                    'Portugues': 'ptBR',
+                    'English': 'enUS',
+                    'Espanol': 'esLA',
+                    'Turkce': 'trTR',
+                    'Italiano': 'itIT',
+                    'Arabic': 'arME',
+                    'Deutsch': 'deDE',
+                    'Russian' : 'ruRU'}
+        self.Loc_lang_1 = Loc_lang[self.config_dict['language']]
+        self.Loc_lang_2 = Loc_lang[self.config_dict['language2']]
+
+        if self.htmlconfig['metadata']['episode_number'] != '':
+            self.video_output = dircheck([os.path.join(os.path.abspath(self.config_dict['download_dirctory']),''),
+                                    clean_text(self.htmlconfig['metadata']['series_title']),
+                                    ' Episode',
+                                    ' - ' + clean_text(self.htmlconfig['metadata']['episode_number']),
+                                    ' - ' + clean_text(self.htmlconfig['metadata']['title']),
+                                    '.ts'],
+                                    ['True', 'True', 'False', 'True', 1, 'True',], 240)
+        else:
+            self.video_output = dircheck([os.path.join(os.path.abspath(self.config_dict['download_dirctory']),''),
+                                    clean_text(self.htmlconfig['metadata']['series_title']),
+                                    ' - ' + clean_text(self.htmlconfig['metadata']['title']),
+                                    '.ts'],
+                                    ['True', 'True', 1, 'True',], 240)
+
+        download_method = [(self.hls_download, 'HLS stream'), (self.dash_download_, 'DASH stream'), (self.youtube_dl_, 'External Library YoutubeDL')]
+
+        for download_method_run in download_method:
+            #download_method_run[0]()
             try:
-                hls_url = stream_url[Loc_lang_2]
-                dash_url = stream_url_dash[Loc_lang_2]
+                print(f'Now Downloading - {self.title} [{download_method_run[1]}]\n')
+                download_method_run[0]()
+                break
             except:
-                hls_url = stream_url[None]
-                dash_url = stream_url_dash[None]
-                forcesub = False
-    else:
-        try:
-            hls_url = stream_url[None]
-            dash_url = stream_url_dash[None]
-        except:
-            try:
-                hls_url = stream_url['enUS']
-                dash_url = stream_url_dash['enUS']
-            except:
-                hls_url = stream_url[list(stream_url)[0]]
-                dash_url = stream_url_dash[list(stream_url_dash)[0]]
-
-    hls_url_m3u8 = m3u8.load(hls_url)
-    hls_url_parse = {}
-    dash_id_parse = {}
-    for stream in hls_url_m3u8.playlists:
-        hls_url_parse.update({stream.stream_info.resolution[1]: stream.absolute_uri})
-    if config_['video_quality'] == '1080p':
-        try:
-            hls_url = hls_url_parse[1080]
-        except:
-            pass
-    elif config_['video_quality'] == '720p':
-        try:
-            hls_url = hls_url_parse[720]
-        except:
-            pass
-    elif config_['video_quality'] == '480p':
-        try:
-            hls_url = hls_url_parse[480]
-        except:
-            pass
-    elif config_['video_quality'] == '360p':
-        try:
-            hls_url = hls_url_parse[360]
-        except:
-            pass
-    elif config_['video_quality'] == '240p':
-        try:
-            hls_url = hls_url_parse[240]
-        except:
-            pass
+                error_line = f'It seem there is problem in {download_method_run[1]}'
+                if download_method.index(download_method_run) < len(download_method)-1:
+                    error_line += f', will use {download_method[download_method.index(download_method_run)+1][1]} instead'
+                print(error_line)
+                continue
 
 
-    ### End stolen code ###
 
-    # ----------
-    print(format('Now Downloading - ' + title))
-    if htmlconfig['metadata']['episode_number'] != '':
-        video_input = dircheck([os.path.join(os.path.abspath(config_['download_dirctory']),''),
-                                 clean_text(htmlconfig['metadata']['series_title']),
-                                 ' Episode',
-                                 ' - ' + clean_text(htmlconfig['metadata']['episode_number']),
-                                 ' - ' + clean_text(htmlconfig['metadata']['title']),
-                                 '.ts'],
-                                 ['True', 'True', 'False', 'True', 1, 'True',], 240)
-    else:
-        video_input = dircheck([os.path.join(os.path.abspath(config_['download_dirctory']),''),
-                                 clean_text(htmlconfig['metadata']['series_title']),
-                                 ' - ' + clean_text(htmlconfig['metadata']['title']),
-                                 '.ts'],
-                                 ['True', 'True', 1, 'True',], 240)
 
-    download_subprocess_result = 0
-    try:
-        download_ = video_hls()
-        download_subprocess_result = download_.video_hls(hls_url, video_input, config_['connection_n_'])
-    except AssertionError:
+    def hls_download(self):
+        if self.config_dict['forcesubtitle']:
+            if self.Loc_lang_1 in self.stream_url_hls:
+                hls_url = self.stream_url_hls[self.Loc_lang_1]
+            elif self.Loc_lang_2 in self.stream_url_hls:
+                hls_url = self.stream_url_hls[self.Loc_lang_2]
+            else:
+                hls_url = self.stream_url_hls[None]
+                self.config_dict['forcesubtitle'] = False
+        else:
+            if None in self.stream_url_hls:
+                hls_url = self.stream_url_hls[None]
+            elif 'enUS' in self.stream_url_hls:
+                hls_url = self.stream_url_hls['enUS']
+            else:
+                hls_url = self.stream_url_hls[list(self.stream_url_hls)[0]]
+        
+        hls_url_m3u8 = m3u8.load(hls_url)
+        hls_url_parse = {}
+        
+        for stream in hls_url_m3u8.playlists:
+            hls_url_parse.update({stream.stream_info.resolution[1]: stream.absolute_uri})
+        #print(self.config_dict['video_quality'])
+        if re.match('\d+',self.config_dict['video_quality']):
+            if int(re.match('\d+',self.config_dict['video_quality']).group(0)) in hls_url_parse:
+                hls_url = hls_url_parse[int(re.match('\d+',self.config_dict['video_quality']).group(0))]
+        elif self.config_dict['video_quality'].lower() in ['low', 'lowest', 'worst']:
+            hls_url = hls_url_parse[min(hls_url_parse)]
+        elif self.config_dict['video_quality'].lower() in ['high', '"highest" ', 'best']:
+            hls_url = hls_url_parse[max(hls_url_parse)]
+            
+
+        
         download_subprocess_result = 1
+        cur_retry = 1
+        while cur_retry < self.retries + 1:
+            #download_ = video_hls()
+            #download_subprocess_result = download_.video_hls(hls_url, self.video_output, self.config_dict['connection_n_'])
+            try:
+                download_ = video_hls()
+                download_subprocess_result = download_.video_hls(hls_url, self.video_output, self.config_dict['connection_n_'])
+                #print(download_subprocess_result)
+                #input()
+                if download_subprocess_result == 0:
+                    cur_retry = self.retries + 1
+            except:
+                print(f'error while downloading.......retry #{cur_retry}')
+                cur_retry += 1
+        
 
-    if download_subprocess_result != 0:
-        try:
-            print('It seem there is problem in HLS stream, will use DASH stream instead')
-            download_ = dash_download()
-            download_subprocess_result = download_.download(dash_url, video_input, config_['connection_n_'], r=config_['video_quality'], abr='best')
-        except:
-            download_subprocess_result = 1
+    def dash_download_(self):
+        if self.config_dict['forcesubtitle']:
+            if self.Loc_lang_1 in self.stream_url_dash:
+                dash_url = self.stream_url_dash[self.Loc_lang_1]
+            elif self.Loc_lang_2 in self.stream_url_dash:
+                dash_url = self.stream_url_dash[self.Loc_lang_2]
+            else:
+                dash_url = self.stream_url_dash[None]
+                self.config_dict['forcesubtitle'] = False
+        else:
+            if None in self.stream_url_dash:
+                dash_url = self.stream_url_dash[None]
+            elif 'enUS' in self.stream_url_dash:
+                dash_url = self.stream_url_dash['enUS']
+            else:
+                dash_url = self.stream_url_dash[list(self.stream_url_dash)[0]]
 
-    if download_subprocess_result != 0:
-        print('It seem there is problem in DASH stream, will use External Library YoutubeDL instead')
+        download_subprocess_result = 1
+        cur_retry = 1
+        while cur_retry < self.retries + 1:
+            try:
+                download_ = dash_download()
+                download_subprocess_result = download_.download(dash_url, self.video_output, self.config_dict['connection_n_'], r=self.config_dict['video_quality'], abr='best')
+                if download_subprocess_result == 0:
+                    cur_retry = self.retries + 1
+            except:
+                print(f'error while downloading.......retry #{cur_retry}')
+                cur_retry += 1
+
+
+    def youtube_dl_(self):
+        dash_id_parse = {}
+        if self.config_dict['forcesubtitle']:
+            if self.Loc_lang_1 in self.stream_url_dash:
+                dash_url = self.stream_url_dash[self.Loc_lang_1]
+            elif self.Loc_lang_2 in self.stream_url_dash:
+                dash_url = self.stream_url_dash[self.Loc_lang_2]
+            else:
+                dash_url = self.stream_url_dash[None]
+                self.config_dict['forcesubtitle'] = False
+        else:
+            if None in self.stream_url_dash:
+                dash_url = self.stream_url_dash[None]
+            elif 'enUS' in self.stream_url_dash:
+                dash_url = self.stream_url_dash['enUS']
+            else:
+                dash_url = self.stream_url_dash[list(self.stream_url_dash)[0]]
+
         with youtube_dl.YoutubeDL({'logger': MyLogger()}) as ydl:
             dash_info_dict = ydl.extract_info(dash_url, download=False)
         for stream in dash_info_dict['formats']:
             if not stream['height'] == None:
                 dash_id_parse.update({stream['height']: stream['format_id']})
-        if config_['video_quality'] == '1080p':
-            try:
-                dash_video_id = dash_id_parse[1080]
-            except:
-                pass
-        elif config_['video_quality'] == '720p':
-            try:
-                dash_video_id = dash_id_parse[720]
-            except:
-                pass
-        elif config_['video_quality'] == '480p':
-            try:
-                dash_video_id = dash_id_parse[480]
-            except:
-                pass
-        elif config_['video_quality'] == '360p':
-            try:
-                dash_video_id = dash_id_parse[360]
-            except:
-                pass
-        elif config_['video_quality'] == '240p':
-            try:
-                dash_video_id = dash_id_parse[240]
-            except:
-                pass
-        def youtube_dl_proxy(*args, **kwargs):
-            import sys
-            if 'idlelib.run' in sys.modules:  # code to force this script to only run in console
-                try:
-                    import run_code_with_console
-                    return run_code_with_console.run_code_with_console()
-                except:
-                    pass  # end of code to force this script to only run in console
-            return youtube_dl.YoutubeDL(*args, **kwargs)
-            pass
+        
+        if int(re.match('\d+',self.config_dict['video_quality']).group(0)) in dash_id_parse:
+            dash_video_id = dash_id_parse[int(re.match('\d+',self.config_dict['video_quality']).group(0))]
 
         if not 'idlelib.run' in sys.modules:
             with youtube_dl.YoutubeDL(
-                    {'format': dash_video_id + ',bestaudio', 'outtmpl': video_input[:-3] + '.%(ext)s'}) as ydl:
+                    {'format': f'{dash_video_id},bestaudio', 'outtmpl': rf'{os.path.splitext(self.video_output)[0]}.%(ext)s'}) as ydl:
                 ydl.download([dash_url])
         else:
-            youtube_dl_script='''\
+            youtube_dl_script=f'''\
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 import youtube_dl
 with youtube_dl.YoutubeDL(
-                {'format': \''''+dash_video_id+''',bestaudio', 'outtmpl': r\''''+video_input[:-3]+'''\' + '.%(ext)s'}) as ydl:
-                ydl.download([\'\'\''''+dash_url+'''\'\'\'])
+                {{'format': \'{dash_video_id},bestaudio', 'outtmpl': r\'{os.path.splitext(self.video_output)[0]}.%(ext)s'}}) as ydl:
+                ydl.download([\'\'\'{dash_url}\'\'\'])
 '''
-            command = 'where'  # Windows
-            if os.name != "nt":  # non-Windows
-                command = 'which'
-            python_path_ = os.path.normpath(
-                os.path.join(os.path.split(subprocess.getoutput([command, 'pip3']))[0], '..', 'python.exe'))
-            try:
-                subprocess.call([python_path_, '-c', youtube_dl_script])
-            except FileNotFoundError:  # fix for old version windows that dont have 'where' command
-                reg_ = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Python\PythonCore')
-                python_request_v = [3, 0]
-                if len(python_request_v) > 0:
-                    if len(python_request_v) < 2:
-                        python_request_v += [0]
-                    python_request_v = python_request_v[0] + python_request_v[1] / 10
+
+            subprocess.call(['py', '-c', youtube_dl_script])
+            
+
+        
+
+
+
+    def download(self, page_url='', sess_id_=''):
+        if self.page_url == '':
+            if page_url != '':
+                self.page_url = page_url
+            else:
+                self.page_url = input('Please enter Crunchyroll video URL:>\n')
+
+        if self.sess_id_ == '':
+            if sess_id_ != '':
+                self.sess_id_ = sess_id_
+            else:
+                cookies_ = ConfigParser()
+                cookies_.read('cookies')
+                if self.config_dict['forceusa']:
+                    self.sess_id_ = cookies_.get('COOKIES', 'sess_id_usa')
                 else:
-                    python_request_v = 0.0
-                for reg_i in range(0, winreg.QueryInfoKey(reg_)[0]):
-                    reg_2 = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r'SOFTWARE\Python\PythonCore')
-                    if float(winreg.EnumKey(reg_2, reg_i)) >= python_request_v and \
-                       True if python_request_v == 0.0 else float(winreg.EnumKey(reg_2, reg_i)) < float(
-                        round(python_request_v) + 1):
-                        reg_2 = winreg.OpenKey(reg_2, winreg.EnumKey(reg_2, reg_i))
-                        reg_2 = winreg.OpenKey(reg_2, r'PythonPath')
-                        python_path_ = os.path.normpath(
-                            os.path.join(winreg.EnumValue(reg_2, 0)[1].split(';')[0], '..', 'python.exe'))
-                subprocess.call([python_path_, '-c', youtube_dl_script])
+                    self.sess_id_ = cookies_.get('COOKIES', 'sess_id')
+
+        check_page_url = re.match(r'https?://www.crunchyroll.com/.+?/.+?-(\d+?)$',self.page_url)
+
+        if check_page_url:
+            #this is episode
+            self.media_id = check_page_url[1]
+            self.page_url = f'http://www.crunchyroll.com/media-{self.media_id}'
+            self.download_episode()
+
+        else:
+            #this is series
+            pass
+        #print(self.page_url)
+
+        vilos_subtitle(self.page_url)
+        mkv_merge(self.video_output, self.config_dict['video_quality'], 'English')
+        
 
 
 
-    vilos_subtitle(page_url)
-    mkv_merge(video_input, config_['video_quality'], 'English')
-
-def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
+def mkv_merge(video_input,pixl,defult_lang=None):
     print('Starting mkv merge')
     config_ = config()
     if defult_lang is None:
@@ -303,10 +323,10 @@ def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
         mkvmerge = os.path.abspath(os.path.join("..","video-engine", "mkvmerge.exe"))
     working_dir = os.path.dirname(video_input)
     working_name = os.path.splitext(os.path.basename(video_input))[0]
-    filename_output = os.path.join(working_dir, working_name + '[' + pixl +'].mkv')
+    filename_output = os.path.join(working_dir, f'{working_name}[{pixl}].mkv')
     exists_counter = 1
     while os.path.lexists(filename_output):
-        filename_output = filename_output[:-4] + '(' + str(exists_counter) + ')' + filename_output[-4:]
+        filename_output = f'{os.path.splitext(filename_output)[0]}({exists_counter}){os.path.splitext(filename_output)[1]}'
         exists_counter += 1
     for file in os.listdir(working_dir):
         if file.startswith(working_name) and file.endswith(".ts"):
@@ -330,11 +350,13 @@ def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
     defult_lang_sub = ''
     for file in os.listdir(working_dir):
         if file.startswith(working_name) and file.endswith(".ass"):
+            #print(re.findall(r'\]\[(.*)\]',file)[0], lang_iso[lang1], lang_iso[lang2], defult_lang_sub)
             if re.findall(r'\]\[(.*)\]',file)[0] == lang_iso[config_['language']]:
                 defult_lang_sub = re.findall(r'\]\[(.*)\]',file)[0]
             if defult_lang_sub == '':
                 if re.findall(r'\]\[(.*)\]', file)[0] == lang_iso[config_['language2']]:
                     defult_lang_sub = re.findall(r'\]\[(.*)\]', file)[0]
+    #print(defult_lang_sub)
     for file in os.listdir(working_dir):
         if file.startswith(working_name) and file.endswith(".m4a"):
             cmd += ['--language', '0:jpn',
@@ -349,39 +371,29 @@ def mkv_merge(video_input,pixl,defult_lang=None, keep_files=False):
                     '--track-name', '0:' + re.findall(r'\]\[(.*)\]',file)[0], '-s', '0',
                     os.path.abspath(os.path.join(working_dir,file))]
 
+    #print(cmd)
     cmd_exitcode = 2
+    non_windows_os_pre = []
     if os.name != 'nt':
-        cmd = ['wine']+cmd
-    cmd_exitcode = subprocess.call(cmd)
-    if cmd_exitcode != 0:
+        non_windows_os_pre = ['wine']
+    cmd_exitcode = subprocess.call(non_windows_os_pre+cmd)
+    if cmd_exitcode !=0:
         print('fixing TS file')
-        for file in os.listdir(working_dir):
-            if file.startswith(working_name) and file.endswith(".ts"):
-                unix_pre = []
-                if os.name != 'nt':
-                    unix_pre += ['wine']
-                subprocess.call(unix_pre + [mkvmerge.replace('mkvmerge', 'ffmpeg'), '-i', os.path.abspath(os.path.join(working_dir, file)), '-map', '0', '-c', 'copy',
-                                 '-f', 'mpegts', os.path.abspath(os.path.join(working_dir, file)).replace('.ts','_fix.ts')])
-                if os.name == 'nt':
-                    cmd[11] = cmd[11].replace('.ts','_fix.ts')
-                else:
-                    cmd[12] = cmd[12].replace('.ts','_fix.ts')
-                cmd_exitcode = subprocess.call(cmd)
-                
+        ts_fix_cmd = [mkvmerge.replace('mkvmerge', 'ffmpeg'), '-i', cmd[11], '-map', '0', '-c', 'copy',
+	                                 '-f', 'mpegts', cmd[11].replace('.ts','_fix.ts')]
+        subprocess.call(non_windows_os_pre + ts_fix_cmd)
+        cmd[11] = cmd[11].replace('.ts','_fix.ts')
+        cmd_exitcode = subprocess.call(non_windows_os_pre+cmd)
+        
+    #subprocess.Popen(cmd.encode('ascii', 'surrogateescape').decode('utf-8'))
     print('Merge process complete')
     print('Starting Final Cleanup')
-    #keep_files = True
-    if not keep_files:
-        for file in os.listdir(working_dir):
-            if file.startswith(working_name) and (file.endswith(".ass") or file.endswith(".m4a") or file.endswith(".mp4") or file.endswith(".ts")):
-                os.remove(os.path.abspath(os.path.join(working_dir,file)))
-                
+    #input()
+    #os.remove(os.path.abspath(video_input))
+    for file in os.listdir(working_dir):
+        if file.startswith(working_name) and (file.endswith(".ass") or file.endswith(".m4a") or file.endswith(".mp4") or file.endswith(".ts")):
+            os.remove(os.path.abspath(os.path.join(working_dir,file)))
     
-
-    
-
-# ----------
-
 
 if __name__ == '__main__':
     try:
@@ -401,3 +413,4 @@ if __name__ == '__main__':
             pass
     ultimate(page_url, seasonnum, epnum)
     #mkv_merge('..\\export\\The Rising of the Shield Hero - 1 - The Shield Hero.ts','480p','ara')
+    input()

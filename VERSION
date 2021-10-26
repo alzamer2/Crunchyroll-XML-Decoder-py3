@@ -1,3 +1,15 @@
+### 1.4 rev.31
+* 
+* I'M BACK
+* re-write HLS code so now it can resume broken download (under testing report if any problem happned for resumed anime)
+* re-write DASH code so now it can resume broken download (under testing report if any problem happned for resumed anime)
+* HLS code support un-encypted video
+* fix HLS SSH error
+* optimize external libry code
+* change anime downloading to class
+* re-write autocatch, now it support multi sessions/dub and let you choice which to catch
+* fix bat file so it will run code even if defult program for py file is editor
+* minor fixes
 ### 1.4 rev.30
 * 
 * Clean Up for code

@@ -7,16 +7,33 @@ import platform
 import subprocess
 import zipfile
 import math
+import importlib
 
 try:
     from colorama import Fore, Style, init
     init()
 except:
     pass
+
+####### customs print
+org_print = print
+Green_c = '\x1b[32m'
+Red_c = '\x1b[31m'
+Default_c = '\x1b[0m'
+
+def print_idle_cmd_txt_fix(value='', *args, **kwargs):
+    if isinstance(value, str):
+        if 'idlelib.run' in sys.modules:
+            value = re.sub('\\x1b.*?\[\d*\w','',value)
+    org_print(value, *args, **kwargs)
+
+print = print_idle_cmd_txt_fix
+#################
 def testing_external_moudules_(code_version=''):
     if code_version == '':
         from updater import get_lastest_version
         code_version = get_lastest_version()
+        
     try:
         python_bit_ = re.findall("[0-9][0-9] bit", sys.version).pop()
     except:
@@ -24,97 +41,56 @@ def testing_external_moudules_(code_version=''):
             python_bit_ = "64 bit"
         else:
             python_bit_ = "32 bit"
-    python_version_ = re.findall('\d\.\d\.?\d?',sys.version)[0]
-    print(idle_cmd_txt_fix("python version=" + '\x1b[32m' + '.'.join([str(i) for i in sys.version_info[:3]]) + " " + python_bit_ + '\x1b[0m'))
-    print(idle_cmd_txt_fix("OS Version=" + '\x1b[32m' + platform.platform().replace("-", " ") + '\x1b[0m'))
-    print(idle_cmd_txt_fix("System Type=" + '\x1b[32m' + platform.machine() + '\x1b[0m'))
-    print(idle_cmd_txt_fix("Code Version=" + '\x1b[32m' + '.'.join([str(i) for i in code_version[1][:2]]) + ' rev.'+ str(code_version[1][2]) + '\x1b[0m'+
-                           ('\x1b[32m' +' (Up-To-Date)'+ '\x1b[0m' if code_version[0] <= code_version[1] else '\x1b[31m' +' (Need to Update the Code)'+ '\x1b[0m')))
-
-
+            
+    information_dict = {'Python Version': [re.findall('\d\.\d\.?\d?',sys.version)[0], python_bit_],
+                        'OS Version': [platform.platform().replace("-", " ")],
+                        'System Type': [platform.machine()],
+                        'Code Version': ['.'.join([str(i) for i in code_version[1][:2]]), str(code_version[1][2]), '(Up-To-Date)' if code_version[0] <= code_version[1] else '(Need to Update the Code)']
+                        }
+    for info, value in information_dict.items():
+        if info == 'Code Version':
+            if value[2] == '(Up-To-Date)':
+                print(f'{info}={Green_c}{value[0]} rev.{value[1]}{Default_c} {value[2]}')
+        else:
+            print(f'{info}={Green_c}{" ".join(str(i) for i in value)}{Default_c}')
+    modules_dict = {'colorama': ['Fore', 'Style', 'init'],
+                    'lxml': ['etree'],
+                    'wget': [None],
+                    'cryptography.hazmat.primitives.ciphers': ['Cipher'],
+                    'cloudscraper': [None],
+                    'm3u8': [None],
+                    'youtube_dl': [None],
+                    'bs4': ['BeautifulSoup'],
+                    'pager': ['getwidth'],
+                    'unidecode': ['unidecode'],
+                    'socks': [None],
+                    'psutil': [None],
+                    'browser_cookie3': [None],
+                    }
+    modules_pip_names = {'colorama': 'Colorama',
+                         'cryptography.hazmat.primitives.ciphers': 'cryptography',
+                         'bs4': 'beautifulsoup4',
+                         'socks': 'requests[socks]'
+                         }
 
     pip_download_ = []
 
-    try:
-        from colorama import Fore, Style, init
-        init()
-        print(idle_cmd_txt_fix('Colorama : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        pip_download_.append('Colorama')
-    try:
-        from lxml import etree
-        print(idle_cmd_txt_fix('lxml : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('lxml : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing lxml...'))
-        pip_download_.append('lxml')
-    try:
-        import wget
-        print(idle_cmd_txt_fix('wget : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('wget : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing wget...'))
-        pip_download_.append('wget')
-    try:
-        from cryptography.hazmat.primitives.ciphers import Cipher
-        print(idle_cmd_txt_fix('Cryptography : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('Cryptography : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m' + ', Installing Cryptography...'))
-        pip_download_.append('cryptography==2.4.2')
-    try:
-        import cloudscraper
-        print(idle_cmd_txt_fix('cloudscraper : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('cloudscraper : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+ ', Installing cloudscraper...'))
-        pip_download_.append('cloudscraper')
-    try:
-        import m3u8
-        print(idle_cmd_txt_fix('m3u8 : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('m3u8 : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing m3u8...'))
-        pip_download_.append('m3u8')
-    try:
-        import youtube_dl
-        print(idle_cmd_txt_fix('youtube_dl : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('youtube_dl : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing youtube_dl...'))
-        pip_download_.append('youtube_dl')
-    try:
-        import socks
-        print(idle_cmd_txt_fix('requests[socks] : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('requests[socks] : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing requests[socks]...'))
-        pip_download_.append('requests[socks]')
-    try:
-        from bs4 import BeautifulSoup
-        print(idle_cmd_txt_fix('BeautifulSoup : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('BeautifulSoup : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing BeautifulSoup...'))
-        pip_download_.append('beautifulsoup4')
-    try:
-        from pager import getwidth as get_terminal_size
-        print(idle_cmd_txt_fix('pager : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('pager : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing pager...'))
-        pip_download_.append('pager')
-    try:
-        from unidecode import unidecode
-        print(idle_cmd_txt_fix('Unidecode : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('Unidecode : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing Unidecode...'))
-        pip_download_.append('unidecode')
-    try:
-        import psutil
-        print(idle_cmd_txt_fix('psutil : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('psutil : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing psutil...'))
-        pip_download_.append('psutil')
-    try:
-        import browser_cookie3
-        print(idle_cmd_txt_fix('browser_cookie3 : ' + '\x1b[32m' + 'installed!' + '\x1b[0m'))
-    except ImportError:
-        print(idle_cmd_txt_fix('browser_cookie3 : ' + '\x1b[31m' + 'not installed!' + '\x1b[0m'+', Installing browser_cookie3...'))
-        pip_download_.append('browser_cookie3')
+    for module_name, function_names in modules_dict.items():
+        try:
+            module_temp = importlib.import_module(module_name)
+            
+            if function_names != [None]:
+                for function_name in function_names:
+                    if not hasattr(module_temp,function_name):
+                        importlib.import_module(f'{module_name}.{function_name}')
+
+            print(f'{module_name} : {Green_c}installed!{Default_c}')
+        except ImportError:
+            print(f'{module_name} : {Red_c}not installed!{Default_c}, Installing {module_name}...')
+            pip_download_.append(modules_pip_names[module_name] if module_name in modules_pip_names else module_name)
+
     python_version_c = re.findall('(\d)\.(\d\.?\d?)',sys.version)[0]
-    if not pip_download_ == []:
+    if pip_download_ != []:
         '''
         if not 'idlelib.run' in sys.modules:
             pip_main(['install']+pip_download_)
@@ -132,33 +108,52 @@ def testing_external_moudules_(code_version=''):
     elif os.path.lexists(os.path.join('..', 'crunchy-xml-decoder-py3.py')):
         bin_dir__ = os.path.join("..", "video-engine")
     else:
-        print(idle_cmd_txt_fix('\x1b[31m'+"Can't find the crunchy-xml-decoder-py3 Folder"+'\x1b[0m'))
+        print(f"{Red_c}Can't find the crunchy-xml-decoder-py3 Folder{Default_c}")
+    
     if not os.path.lexists(bin_dir__):
         os.makedirs(bin_dir__)
-    if not os.path.lexists(os.path.join(bin_dir__,"mkvmerge.exe")):
-        import wget
-        print(idle_cmd_txt_fix('mkvmerge : ' + '\x1b[31m' + 'not Found!' + '\x1b[0m'+', Downloading mkvmerge...'))
-        if platform.machine().endswith('64'):
-            wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge_win64.zip',bin_dir__)
-            unzip_(os.path.join(bin_dir__,"mkvmerge_win64.zip"), bin_dir__)
-            os.remove(os.path.join(bin_dir__,"mkvmerge_win64.zip"))
+    exe_dict = {"mkvmerge.exe":{'32': 'https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge_win32.zip',
+                                '64': 'https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge_win64.zip'},
+                "ffmpeg.exe":{'32': 'https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/ffmpeg.zip',
+                              '64': 'https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/ffmpeg.zip'}
+                }
+    for EXE in exe_dict:
+        if os.path.lexists(os.path.join(bin_dir__,EXE)):
+            print(f'{EXE.upper()} : {Green_c}Found!{Default_c}')
         else:
-            wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge_win32.zip',bin_dir__)
-            unzip_(os.path.join(bin_dir__,"mkvmerge_win32.zip"), bin_dir__)
-            os.remove(os.path.join(bin_dir__,"mkvmerge_win32.zip"))
-    if not os.path.lexists(os.path.join(bin_dir__,"ffmpeg.exe")):
-        import wget
-        wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/ffmpeg.zip',bin_dir__)
-        unzip_(os.path.join(bin_dir__,"ffmpeg.zip"), bin_dir__)
-        os.remove(os.path.join(bin_dir__,"ffmpeg.zip"))
+            if not 'wget' in locals():
+                import wget
+            print(f'{EXE.upper()} : {Red_c}not Found!{Default_c}, Downloading {EXE.upper()}...')
+            if platform.machine().endswith('64'):       #64bit
+                exe_url = exe_dict[EXE]['64']
+            else:                                       #32bit
+                exe_url = exe_dict[EXE]['32']
+            wget.download(exe_url,bin_dir__)
+            unzip_(os.path.join(bin_dir__,os.path.split(exe_url)[1]), bin_dir__)
+            os.remove(os.path.join(bin_dir__,os.path.split(exe_url)[1]))
 
-
-
-	
-def idle_cmd_txt_fix(print_text):
-    if 'idlelib.run' in sys.modules:
-        print_text = re.sub('\\x1b.*?\[\d*\w','',print_text)
-    return print_text
+    #if not os.path.lexists(os.path.join(bin_dir__,"mkvmerge.exe")):
+    #    if not 'wget' in locals():
+    #        import wget
+    #    print('{EXE} : {Red}not Found!{Default}, Downloading {EXE}...'.format(EXE = 'MKVMerge',
+    #        Green = '\x1b[32m', Red = '\x1b[31m', Default = '\x1b[0m'))
+    #    if platform.machine().endswith('64'):
+    #        wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge_win64.zip',bin_dir__)
+    #        unzip_(os.path.join(bin_dir__,"mkvmerge_win64.zip"), bin_dir__)
+    #        os.remove(os.path.join(bin_dir__,"mkvmerge_win64.zip"))
+    #    else:
+    #        wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/mkvmerge_win32.zip',bin_dir__)
+    #        unzip_(os.path.join(bin_dir__,"mkvmerge_win32.zip"), bin_dir__)
+    #        os.remove(os.path.join(bin_dir__,"mkvmerge_win32.zip"))
+    #if not os.path.lexists(os.path.join(bin_dir__,"ffmpeg.exe")):
+    #    if not 'wget' in locals():
+    #        import wget
+    #    print('{EXE} : {Red}not Found!{Default}, Downloading {EXE}...'.format(EXE = 'FFmpeg',
+    #        Green = '\x1b[32m', Red = '\x1b[31m', Default = '\x1b[0m'))
+    #    wget.download('https://github.com/alzamer2/Crunchyroll-XML-Decoder-py3/releases/download/v0.0/ffmpeg.zip',bin_dir__)
+    #    unzip_(os.path.join(bin_dir__,"ffmpeg.zip"), bin_dir__)
+    #    os.remove(os.path.join(bin_dir__,"ffmpeg.zip"))
+            
 
 def unzip_(filename_,out):
     zf = zipfile.ZipFile(filename_)

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#version 1.1
 from urllib.parse import urlparse, urlunparse, urljoin
+import sys
 import re
 import tempfile
-import os
+import os, shutil
+import json
 import threading
 import math
 import time
 
-#from altfuncs import FileAdapter, LocalFileAdapter
 from bs4 import BeautifulSoup
 from colorama import Fore, Style, init
 import requests
@@ -30,7 +32,9 @@ class dash_download:
         self.dash_duct = dict(dashvideo={}, dashaudio={}, dashsubtitle={})
         self.dash_stream_id = [None,None]
         self.dash_v_stream_urls = list()
+        self.dash_v_filenames = list()
         self.dash_a_stream_urls = list()
+        self.dash_a_filenames = list()
         self.active_urls_list = list()
         self.urls_list_r = list()
         self.dash_v_list_size = list()
@@ -39,13 +43,23 @@ class dash_download:
         self.dash_a_list_size_c = list()
         self.tasks1 = []
         self.progress_bar_print = ['']
+        self.progress_bar_arg = []
         self.start_t = time.process_time()
+        self.printing = True
 
 
     def get_dash_file(self, url=None):
-        session = requests.session()
-        resp_ = session.get(url)
-        self.dash_file = resp_.content
+        if url.startswith(('https://', 'http://')):
+            session = requests.session()
+            resp_ = session.get(url)
+            self.dash_file = resp_.content
+            #print(resp_.url)
+            #input('xxx')
+            self.dash_duct['manifest_url'] = resp_.url
+        else:
+            with open(url) as fileobj:
+                self.dash_file = fileobj.read().strip()
+            self.dash_duct['manifest_url'] = url
         self.dash_duct['url'] = url
         self.dash_duct['manifest_url'] = resp_.url
 
@@ -81,8 +95,17 @@ class dash_download:
                 self.dash_duct['dashvideo'][item['id']] = self.attrs_convert(dict(item.attrs))
                 for streams in item.find_all('representation'):
                     self.dash_duct['dashvideo'][item['id']][streams['id']] = self.attrs_convert(dict(streams.attrs))
+                                                              
+                                              
+                                                                                              
+                                                    
+                                                                                                                     
                     self.dash_duct['dashvideo'][item['id']]['segmenttemplate'] = self.attrs_convert(dict(item.segmenttemplate.attrs))
                     self.dash_duct['dashvideo'][item['id']]['segmenttemplate']['segmenttimeline'] = []
+                    self.dash_duct['dashvideo'][item['id']][streams['id']]['fragment_base_url'] =  []
+                    for base_url in streams.find_all('baseurl'):
+                        self.dash_duct['dashvideo'][item['id']][streams['id']]['fragment_base_url'] += [base_url.string]
+                    self.dash_duct['dashvideo'][item['id']][streams['id']]['fragment_base_url'] += [self.dash_duct['fragment_base_url']]
                 for segment_ in item.segmenttemplate.segmenttimeline.find_all('s'):
                     repeat_ = 1
                     if segment_.has_attr('r'):
@@ -94,8 +117,17 @@ class dash_download:
                 self.dash_duct['dashaudio'][item['id']] = self.attrs_convert(dict(item.attrs))
                 for streams in item.find_all('representation'):
                     self.dash_duct['dashaudio'][item['id']][streams['id']] = self.attrs_convert(dict(streams.attrs))
+                                                              
+                                              
+                                                                                              
+                                                    
+                                                                                                                     
                     self.dash_duct['dashaudio'][item['id']]['segmenttemplate'] = self.attrs_convert(dict(item.segmenttemplate.attrs))
                     self.dash_duct['dashaudio'][item['id']]['segmenttemplate']['segmenttimeline'] = []
+                    self.dash_duct['dashaudio'][item['id']][streams['id']]['fragment_base_url'] =  []
+                    for base_url in streams.find_all('baseurl'):
+                        self.dash_duct['dashaudio'][item['id']][streams['id']]['fragment_base_url'] += [base_url.string]
+                    self.dash_duct['dashaudio'][item['id']][streams['id']]['fragment_base_url'] += [self.dash_duct['fragment_base_url']]
                 for segment_ in item.segmenttemplate.segmenttimeline.find_all('s'):
                     repeat_ = 1
                     if segment_.has_attr('r'):
@@ -107,9 +139,18 @@ class dash_download:
                 self.dash_duct['dashsubtitle'][item['id']] = self.attrs_convert(dict(item.attrs))
                 for streams in item.find_all('representation'):
                     self.dash_duct['dashsubtitle'][item['id']][streams['id']] = self.attrs_convert(dict(streams.attrs))
+                                                              
+                                              
+                                                                                                 
+                                                    
+                                                                                                                        
                     self.dash_duct['dashsubtitle'][item['id']]['segmenttemplate'] = self.attrs_convert(
                     dict(item.segmenttemplate.attrs))
                     self.dash_duct['dashsubtitle'][item['id']]['segmenttemplate']['segmenttimeline'] = []
+                    self.dash_duct['dashsubtitle'][item['id']][streams['id']]['fragment_base_url'] =  []
+                    for base_url in streams.find_all('baseurl'):
+                        self.dash_duct['dashsubtitle'][item['id']][streams['id']]['fragment_base_url'] += [base_url.string]
+                    self.dash_duct['dashsubtitle'][item['id']][streams['id']]['fragment_base_url'] += [self.dash_duct['fragment_base_url']]
                 for segment_ in item.segmenttemplate.segmenttimeline.find_all('s'):
                     repeat_ = 1
                     if segment_.has_attr('r'):
@@ -295,11 +336,22 @@ class dash_download:
                 segments_ = self.dash_duct['dashvideo'][v_id]['segmenttemplate']['segmenttimeline']
                 segment_time_line = self.dash_duct['dashvideo'][v_id]['segmenttemplate']['segmenttimeline']
                 bandwidth = int(self.dash_duct['dashvideo'][v_id][self.dash_stream_id[0]]['bandwidth'])
-                self.dash_v_stream_urls += [urljoin(self.dash_duct['fragment_base_url'], init_url)]
-                for i in range(startnumber, len(segments_)+1):
-                    self.dash_v_stream_urls += [urljoin(self.dash_duct['fragment_base_url'], media_url.replace('$Number$',str(i)))]
+                for v_stream in self.dash_duct['dashvideo'][v_id]:
+                    if type(self.dash_duct['dashvideo'][v_id][v_stream]) == dict:
+                        if 'mimetype' in self.dash_duct['dashvideo'][v_id][v_stream]:
+                            if v_stream == self.dash_stream_id[0]:
+                                for base_url in self.dash_duct['dashvideo'][v_id][v_stream]['fragment_base_url']:
+                                    full_init_url = urljoin(base_url, init_url)
+                                    test_resp = requests.get(full_init_url, stream=True)
+                                    if test_resp.status_code == 200:
+                                        self.dash_v_stream_urls += [full_init_url]
+                                        for i in range(startnumber, len(segments_)+1):
+                                            self.dash_v_stream_urls += [urljoin(base_url, media_url.replace('$Number$',str(i)))]
+                                        break
                 self.dash_v_list_size = [0]+[i*bandwidth/8*1000 for i in segment_time_line]
                 self.dash_v_list_size_c = [0]*len(self.dash_v_list_size)
+                self.dash_v_filenames = ['']*len(self.dash_v_list_size)
+                
         for a_id in self.dash_duct['dashaudio']:
             if self.dash_stream_id[1] in self.dash_duct['dashaudio'][a_id]:
                 startnumber = int(self.dash_duct['dashaudio'][a_id]['segmenttemplate']['startnumber'])
@@ -308,17 +360,28 @@ class dash_download:
                 segments_ = self.dash_duct['dashaudio'][a_id]['segmenttemplate']['segmenttimeline']
                 segment_time_line = self.dash_duct['dashaudio'][a_id]['segmenttemplate']['segmenttimeline']
                 bandwidth = int(self.dash_duct['dashaudio'][a_id][self.dash_stream_id[1]]['bandwidth'])
-                self.dash_a_stream_urls += [urljoin(self.dash_duct['fragment_base_url'], init_url)]
-                for i in range(startnumber, len(segments_)+1):
-                    self.dash_a_stream_urls += [urljoin(self.dash_duct['fragment_base_url'], media_url.replace('$Number$',str(i)))]
+                for a_stream in self.dash_duct['dashaudio'][a_id]:
+                    if type(self.dash_duct['dashaudio'][a_id][a_stream]) == dict:
+                        if 'mimetype' in self.dash_duct['dashaudio'][a_id][a_stream]:
+                            if a_stream == self.dash_stream_id[1]:
+                                for base_url in self.dash_duct['dashaudio'][a_id][a_stream]['fragment_base_url']:
+                                    full_init_url = urljoin(base_url, init_url)
+                                    test_resp = requests.get(full_init_url, stream=True)
+                                    if test_resp.status_code == 200:
+                                        self.dash_a_stream_urls += [full_init_url]
+                                        for i in range(startnumber, len(segments_)+1):
+                                            self.dash_a_stream_urls += [urljoin(base_url, media_url.replace('$Number$',str(i)))]
+                                        break
                 self.dash_a_list_size = [0]+[i*bandwidth/8*1000 for i in segment_time_line]
                 self.dash_a_list_size_c = [0]*len(self.dash_a_list_size)
-
+                self.dash_a_filenames = ['']*len(self.dash_a_list_size)
     def print_progress(self):
+        if not self.printing:
+            return
         total_start_time = time.process_time()
         while True:
             still_downloading = False
-            for indx_,task_ in enumerate(self.tasks1):
+            for task_ in self.tasks1:
                 still_downloading = still_downloading or task_.is_alive()
             total_download_size = sum(self.dash_v_list_size+self.dash_a_list_size)
             download_size = sum(self.dash_v_list_size_c+self.dash_a_list_size_c)
@@ -326,15 +389,16 @@ class dash_download:
                 total_speed = str(size_adj(download_size/(time.process_time()-total_start_time), 'internet'))
             else:
                 total_speed = str(size_adj(0, 'internet'))
-            print(progress_bar_(download_size,
-                                total_download_size,
-                                size_adj(download_size,'harddisk')+'/'+size_adj(total_download_size,'harddisk'),
-                                text_end='%'+str(int(100*download_size/total_download_size))+'@'+total_speed))
+            self.progress_bar_arg[0] = [download_size,
+                                        total_download_size,
+                                        '{}/{}'.format(size_adj(download_size,'harddisk'),size_adj(total_download_size,'harddisk')),
+                                        '%{:<5.1f}@{:>8}'.format(100*download_size/total_download_size,total_speed)]
+            self.progress_bar_print[0] = progress_bar_(*self.progress_bar_arg[0])
             for print_line in self.progress_bar_print:
                 print(print_line)
-            print('\033[A'*(len(self.progress_bar_print)+2))
+            print('\033[A'*(len(self.progress_bar_print)+1))
             if not still_downloading:
-                print('\n'*(len(self.progress_bar_print)+2))
+                print('\n'*(len(self.progress_bar_print)+1))
                 break
             time.sleep(0.1)
 
@@ -354,56 +418,127 @@ class dash_download:
                         self.dash_a_list_size_c[self.dash_a_stream_urls.index(url)] += len(chunk)
                     if chunk:
                         f_handle.write(chunk)
+    
 
     def download_thread(self,out_dir):
         while len(self.urls_list_r) >0:
             url = self.urls_list_r.pop()
             filename = os.path.join(out_dir,os.path.split(urlparse(url).path)[1])
-            with self.session.get(url, stream=True) as response:
-                response.raise_for_status()
-                if url in self.dash_v_stream_urls:
-                    self.dash_v_list_size[self.dash_v_stream_urls.index(url)] = int(response.headers['Content-Length'])
-                if url in self.dash_a_stream_urls:
-                    self.dash_a_list_size[self.dash_a_stream_urls.index(url)] = int(response.headers['Content-Length'])
-                with open(filename, 'ab') as f_handle:
-                    chunk_size = 0
-                    part_start_time = time.process_time()
-                    for chunk in response.iter_content(chunk_size=blocksize):
-                        chunk_size += len(chunk)
-                        if part_start_time != time.process_time():
-                            part_speed = str(size_adj(chunk_size/(time.process_time()-part_start_time), 'internet'))
-                        else:
-                            part_speed = str(size_adj(0, 'internet'))
+            if url in self.dash_v_stream_urls[1:]:
+                if self.dash_v_list_size[self.dash_v_stream_urls.index(url)] == self.dash_v_list_size_c[self.dash_v_stream_urls.index(url)]:
+                    continue
+            if url in self.dash_a_stream_urls[1:]:
+                if self.dash_a_list_size[self.dash_a_stream_urls.index(url)] == self.dash_a_list_size_c[self.dash_a_stream_urls.index(url)]:
+                    continue
+            retry = 5
+            while retry >0:
+                chunk_size = 0
+                try:
+                    with self.session.get(url, stream=True) as response:
+                        response.raise_for_status()
                         if url in self.dash_v_stream_urls:
-                            self.dash_v_list_size_c[self.dash_v_stream_urls.index(url)] = chunk_size
+                            self.dash_v_list_size[self.dash_v_stream_urls.index(url)] = int(response.headers['Content-Length'])
+                            self.dash_v_filenames[self.dash_v_stream_urls.index(url)] = filename
                         if url in self.dash_a_stream_urls:
-                            self.dash_a_list_size_c[self.dash_a_stream_urls.index(url)] = chunk_size
-                        index_thread_ = int(threading.current_thread().name.replace('download_thread_',''))
-                        self.progress_bar_print[index_thread_] = progress_bar_(chunk_size,
-                                                                               int(response.headers['Content-Length']),
-                                                                               'Part #'+str(self.active_urls_list.index(url)),
-                                                                               '%'+str(int(chunk_size/int(response.headers['Content-Length'])*100))+'@'+ part_speed)
-                        if chunk:
-                            f_handle.write(chunk)
+                            self.dash_a_list_size[self.dash_a_stream_urls.index(url)] = int(response.headers['Content-Length'])
+                            self.dash_a_filenames[self.dash_a_stream_urls.index(url)] = filename
+                        with open(filename, 'ab') as f_handle:
+                            chunk_size = 0
+                            part_start_time = time.process_time()
+                            for chunk in response.iter_content(chunk_size=blocksize):
+                                chunk_size += len(chunk)
+                                if part_start_time != time.process_time():
+                                    part_speed = str(size_adj(chunk_size/(time.process_time()-part_start_time), 'internet'))
+                                else:
+                                    part_speed = str(size_adj(0, 'internet'))
+                                if url in self.dash_v_stream_urls:
+                                    self.dash_v_list_size_c[self.dash_v_stream_urls.index(url)] = chunk_size
+                                if url in self.dash_a_stream_urls:
+                                    self.dash_a_list_size_c[self.dash_a_stream_urls.index(url)] = chunk_size
+                                index_thread_ = int(threading.current_thread().name.replace('download_thread_',''))+1
+                                self.progress_bar_arg[index_thread_] = [chunk_size,
+                                                                        int(response.headers['Content-Length']),
+                                                                        'Part #{}'.format(self.active_urls_list.index(url)),
+                                                                        '%{:<5.1f}@{:>8}'.format(chunk_size/int(response.headers['Content-Length'])*100,part_speed)]
+                                self.progress_bar_print[index_thread_] = progress_bar_(*self.progress_bar_arg[index_thread_])
+                                if chunk:
+                                    f_handle.write(chunk)
+                            retry = 0
+                except:
+                    retry -= 1
 
+    def save_progress(self, output):
+        with open(os.path.join(output, 'progress_dash.log'), 'w') as progressfile:
+            while True:
+                progressfile.seek(0)
+                progressdata = dict()
+                progressdata['part_offset_v'] = dict()
+                progressdata['part_offset_a'] = dict()
+                for index, v_list_size_c in enumerate(self.dash_v_list_size_c):
+                    if v_list_size_c != 0:
+                        progressdata['part_offset_v'][index] = (self.dash_v_filenames[index], v_list_size_c, self.dash_v_list_size[index])
+                for index, a_list_size_c in enumerate(self.dash_a_list_size_c):
+                    if a_list_size_c != 0:
+                        progressdata['part_offset_a'][index] = (self.dash_a_filenames[index], a_list_size_c, self.dash_a_list_size[index])
+                #for filename_key, filename_value in self.part_filename.items():
+                #    if filename_key in self.part_offset and filename_key in self.part_size:
+                #        progressdata['part_offset'][filename_key] = (filename_value, self.part_offset[filename_key], self.part_size[filename_key])
+
+                #progressdata['part_size'] = self.part_size
+                progressfile.write(json.dumps(progressdata,indent=4,sort_keys=True))
+                still_downloading = False
+                for task_ in self.tasks1:
+                    still_downloading = still_downloading or task_.is_alive()
+                if not still_downloading:
+                    break
+                time.sleep(0.1)
+    
+    def look_for_old_parts(self, new_dir_):
+        old_progress = {}
+        old_progress_dir = ''
+        for fname in os.listdir(os.path.split(self.output_v)[0]):
+            if fname.startswith(os.path.split(self.output_v)[1]) and os.path.isdir(os.path.join(os.path.split(self.output_v)[0],fname)):
+                if os.path.lexists(os.path.join(os.path.split(self.output_v)[0],fname,'progress_dash.log')):
+                    old_progress_dir = os.path.join(os.path.split(self.output_v)[0],fname)
+                    old_progress = json.load(open(os.path.join(old_progress_dir,'progress_dash.log')))
+
+        if old_progress == {}:
+            return
+        for old_part_offset_key, old_part_offset_value in old_progress['part_offset_v'].items():
+            if old_part_offset_value[1] == old_part_offset_value[2]:
+                shutil.move(old_part_offset_value[0], os.path.join(new_dir_,os.path.split(old_part_offset_value[0])[1]))
+                self.dash_v_filenames[int(old_part_offset_key)] = os.path.join(new_dir_,os.path.split(old_part_offset_value[0])[1])
+                self.dash_v_list_size_c[int(old_part_offset_key)] = old_part_offset_value[1]
+                self.dash_v_list_size[int(old_part_offset_key)] = old_part_offset_value[2]
+
+        for old_part_offset_key, old_part_offset_value in old_progress['part_offset_a'].items():
+            if old_part_offset_value[1] == old_part_offset_value[2]:
+                shutil.move(old_part_offset_value[0], os.path.join(new_dir_,os.path.split(old_part_offset_value[0])[1]))
+                self.dash_a_filenames[int(old_part_offset_key)] = os.path.join(new_dir_,os.path.split(old_part_offset_value[0])[1])
+                self.dash_a_list_size_c[int(old_part_offset_key)] = old_part_offset_value[1]
+                self.dash_a_list_size[int(old_part_offset_key)] = old_part_offset_value[2]
+
+        
+
+        shutil.rmtree(old_progress_dir)
     def download_streams(self, video=True, audio=True):
         if video:
             self.active_urls_list += self.dash_v_stream_urls
         if audio:
             self.active_urls_list += self.dash_a_stream_urls
-        # self.active_urls_list = self.dash_v_stream_urls+self.dash_a_stream_urls
         num_parts=len(self.active_urls_list)
         if num_parts/self.connection_n < 2:
             self.connection_n = len(range(0,num_parts,math.ceil(num_parts/self.connection_n)))
         self.progress_bar_print = ['']*(self.connection_n+1)
+        self.progress_bar_arg = ['']*(self.connection_n+1)
         self.urls_list_r = list(self.active_urls_list)[::-1]
-        #self.urls_list_r.reverse()
+        
 
-
-        with tempfile.TemporaryDirectory(dir=os.path.split(self.output_v)[0]) as tempD_:
+        with tempfile.TemporaryDirectory(dir=os.path.split(self.output_v)[0],prefix=os.path.split(self.output_v)[1]) as tempD_:
+            self.look_for_old_parts(tempD_)
             with requests.session() as self.session:
-                # self.session.mount('file://', FileAdapter())
                 print_task = threading.Thread(target=self.print_progress,name='print_thread_')
+                save_progres_task = threading.Thread(target=self.save_progress,name='save_progress_thread_', args=([tempD_]))
                 for n, i in enumerate(range(0,self.connection_n)):
                     task = threading.Thread(target=self.download_thread,name='download_thread_'+str(n), args=([tempD_]))
                     self.tasks1.append(task)
@@ -412,9 +547,11 @@ class dash_download:
                     x.start()
 
                 print_task.start()
+                save_progres_task.start()
                 for x in self.tasks1:
                     x.join()
                 print_task.join()
+                save_progres_task.join()
 
             if video:
                 vfiles = [os.path.split(urlparse(url_).path)[1] for url_ in self.dash_v_stream_urls]
@@ -438,14 +575,14 @@ class dash_download:
                                 outfile.write(byte)
 
     def download(self, url=None, output=None, connection_n=1, video=True, audio=True, **kwargs):
-        import sys
         if 'idlelib.run' in sys.modules: #code to force this script to only run in console
             try:
                 import run_code_with_console
                 return run_code_with_console.run_code_with_console()
             except:
                 pass                     #end of code to force this script to only run in console
-        print()
+        if self.printing:
+            print()
         if url is None:
             url = input('dashlink>>')
         self.url_ = url
@@ -468,49 +605,48 @@ class dash_download:
 ##########################################################################################:---
 
 def progress_bar_(currect,target,text_center='',text_end='%100',text_end_lenght=0,center_bgc='30;42',defult_bgc=''):
+    currect = float(currect)
+    target = float(target)
     try:
         c_width = get_terminal_size()[0]
-        if c_width == 0:
+        if c_width ==0:
             c_width = 60
     except:
         c_width = 60
-    if text_end_lenght == 0 : text_end_lenght = len(text_end)
+    if text_end_lenght == 0 :
+        text_end_lenght = len(text_end)
     if text_end == '%100':
-        text_end = '%'+str(currect * 100 / target)
+        text_end = '%{:.1f}'.format(currect*100/target)
         text_end_lenght = len('%100')
-
-    c_width_croped = c_width - text_end_lenght - 2
-    Lpading = round((c_width_croped - len(text_center)) / 2)
-    Rpading = round(c_width_croped - len(text_center) - Lpading)
-
-    progress_b = ' ' * Lpading + text_center + ' ' * Rpading + '\033['+ defult_bgc + 'm' + '|' + text_end + ' ' * (text_end_lenght - len(text_end))
+    c_width_croped = c_width - text_end_lenght - 3
     marker_pos = round(currect * c_width_croped / target)
-    progress_b = '\033['+ center_bgc + 'm' + progress_b[:marker_pos] + '\033['+ defult_bgc + 'm' + progress_b[marker_pos:marker_pos+1] + progress_b[marker_pos+1:]
+    progress_b = f'{text_center:^{c_width_croped}}|{text_end:<{text_end_lenght}}'
+    progress_b = f'\033[{center_bgc}m{progress_b[:marker_pos]}\033[{defult_bgc}m{progress_b[marker_pos:]}'
+
     return progress_b
 
 def size_adj(size_, x_):
-    if x_ == 'harddisk':
-        if size_/1024 > 1:
-            if (size_/1024)/1024 > 1:
-                if ((size_/1024)/1024)/1024 > 1:
-                    size_out_ = str(round(((size_/1024)/1024)/1024))+'GB'
-                else:
-                    size_out_ = str(round((size_/1024)/1024))+'MB'
+    size_ = int(size_)  #make sure size_ is int
+                                    
+    size_out_ = size_
+    size_adj_dict = {
+        'harddisk': {'round': None, 'base': 1024,
+        'suf': [' bytes', 'KB', 'MB', 'GB']},
+        'internet': {'round': 2, 'base': 1024,
+        'suf': ['b/s', 'Kb/s', 'Mb/s', 'Gb/s']}
+    }
+    for pow in range(1,len(size_adj_dict[x_]['suf'])+1):
+        if size_ /(size_adj_dict[x_]['base']**pow) <= 1:
+            temp_size_out_ = size_ /(size_adj_dict[x_]['base']**(pow-1))
+            temp_size_out_intlen = len(str(int(temp_size_out_)))
+            if temp_size_out_intlen <= 2:
+                size_adj_dict[x_]['round'] = 2
+            elif temp_size_out_intlen == 3:
+                size_adj_dict[x_]['round'] = 1
             else:
-                size_out_ = str(round(size_/1024))+'KB'
-        else:
-            size_out_ = str(round(size_))+'bytes'
-    if x_ == 'internet':
-        if size_/1024 > 1:
-            if (size_/1024)/1024 > 1:
-                if ((size_/1024)/1024)/1024 > 1:
-                    size_out_ = format(((size_/1024)/1024)/1024, '.2f')+'Gb/s'
-                else:
-                    size_out_ = format((size_/1024)/1024, '.2f')+'Mb/s'
-            else:
-                size_out_ = format(size_/1024, '.2f')+'Kb/s'
-        else:
-            size_out_ = format(size_, '.2f')+'b/s'
+                size_adj_dict[x_]['round'] = None
+            size_out_ = f'{temp_size_out_:.{size_adj_dict[x_]["round"]}f}{size_adj_dict[x_]["suf"][pow-1]}'
+            break
     return size_out_
 
 
@@ -518,10 +654,30 @@ def size_adj(size_, x_):
 ##########################################################################################:---      Main
 ##########################################################################################:---
 if __name__ == '__main__':
-    testing = dash_download()
-    testing.download('''https://dl.v.vrv.co/evs/2d60c0a6606424bce7772c0ddc335b08/assets/64oumlo7js44ngv_,2133009.mp4,2133025.mp4,2132993.mp4,2132977.mp4,1038943.mp4,.urlset/manifest.mpd?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cCo6Ly9kbC52LnZydi5jby9ldnMvMmQ2MGMwYTY2MDY0MjRiY2U3NzcyYzBkZGMzMzViMDgvYXNzZXRzLzY0b3VtbG83anM0NG5ndl8sMjEzMzAwOS5tcDQsMjEzMzAyNS5tcDQsMjEzMjk5My5tcDQsMjEzMjk3Ny5tcDQsMTAzODk0My5tcDQsLnVybHNldC9tYW5pZmVzdC5tcGQiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE1NzM5MjYxMjd9fX1dfQ__&Signature=lq2tgVfP6i9avXma4O~CEIRWF6hFtrUp~ZXeCMTiBzh8FLamOZUqRh~8sB8rHaL4YgDEa-0d4x2wVvxFR3G66d74muR5YPYogDR2vMAb8SmDjSrRacitfBZwohc9L3nbowEZvQ-G3q0C4nvgZrLqAYBhWcCTYvMGXJf22bGupSrCus8y0UskCFQ5ehnK0ke-p8wM-5coEoHxtFY96kU1PfvF5hO0RMVqMpHqTrnk47KjuRA87CKmaZnQ6TXRUo~CTy4a6svaL7cRWCUyIR2xQBt5vETAQ8VZOxRZOtJ4vdkCP5C~1vV1vb5781WgfzBVoSHvcZwFaXFt-JrEIb4N~A__&Key-Pair-Id=DLVR''',
-                     #resolution = '1280x720', w= 0, s='low',size='MAX',r='best'
-                     #abr=60, hz=44100
-                     connection_n=8,vbr='best',abr='best'
-                     )
-    input()
+    connection_n = 1
+    output = "download.ts"
+    try:
+        uri = sys.argv[1]
+        #uri = 'https://dl.v.vrv.co/evs/2d60c0a6606424bce7772c0ddc335b08/assets/64oumlo7js44ngv_,2132995.mp4,2133011.mp4,2132979.mp4,2132963.mp4,1038945.mp4,.urlset/master.m3u8?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cCo6Ly9kbC52LnZydi5jby9ldnMvMmQ2MGMwYTY2MDY0MjRiY2U3NzcyYzBkZGMzMzViMDgvYXNzZXRzLzY0b3VtbG83anM0NG5ndl8sMjEzMjk5NS5tcDQsMjEzMzAxMS5tcDQsMjEzMjk3OS5tcDQsMjEzMjk2My5tcDQsMTAzODk0NS5tcDQsLnVybHNldC9tYXN0ZXIubTN1OCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTU1ODY4MzI1Nn19fV19&Signature=pNFL3u8YuKwyK3glAI2jLfvHk981ieKDWRgMPw6elxJXzvYeDt6z-~uuh7lCBpTfYAASO2gvktDhAkyEjkBTRzPnCovyoYRIdOe6iriFRZ4kNP1TcuEKnNF3JTJ1IPll748eIVxjKwHw4QS2GXhozF0DQ89s2cOcELTQa572SZCiAJczm0shOWkq0hyI8sysBSVkmv1LYWdk0ZS1bNUmOf0p5zpoKlu807KecQJH9v2LLop1CFl99ryB~37Lgp7~9tJY9imVJ23COoRJue-Dgs752Ei2ytep4yiw4dQdUmx8SOGaXzMEv~J-fXQTe9Lz8NWBHMj0dQF0ALp3MaUgyw__&Key-Pair-Id=DLVR'
+    except:
+        raise Exception('invalid url')
+    argv_cut = 2
+    if len(sys.argv) >=3:
+        if sys.argv[2].isdigit():
+            connection_n = int(sys.argv[2])
+            argv_cut = 3
+        elif not '=' in sys.argv[2]:
+            output = sys.argv[2]
+            argv_cut = 3
+    if len(sys.argv) >=4:
+        if sys.argv[3].isdigit():
+            connection_n = int(sys.argv[3])
+            argv_cut = 4
+        elif not '=' in sys.argv[3]:
+            output = sys.argv[3]
+            argv_cut = 4
+    download_ = dash_download()
+    #download_.disable_printing = True
+    download_.download(uri, output, connection_n,
+                        **dict(arg.split('=') for arg in sys.argv[argv_cut:]))
+    #print(download_.progress_bar_arg)
