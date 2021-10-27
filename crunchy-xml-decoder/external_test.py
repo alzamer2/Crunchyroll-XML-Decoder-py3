@@ -24,7 +24,7 @@ Default_c = '\x1b[0m'
 def print_idle_cmd_txt_fix(value='', *args, **kwargs):
     if isinstance(value, str):
         if 'idlelib.run' in sys.modules:
-            value = re.sub('\\x1b.*?\[\d*\w','',value)
+            value = re.sub(r'\x1b.*?\[\d*(?:;\d*)?\w','',value)
     org_print(value, *args, **kwargs)
 
 print = print_idle_cmd_txt_fix
@@ -45,12 +45,15 @@ def testing_external_moudules_(code_version=''):
     information_dict = {'Python Version': [re.findall('\d\.\d\.?\d?',sys.version)[0], python_bit_],
                         'OS Version': [platform.platform().replace("-", " ")],
                         'System Type': [platform.machine()],
-                        'Code Version': ['.'.join([str(i) for i in code_version[1][:2]]), str(code_version[1][2]), '(Up-To-Date)' if code_version[0] <= code_version[1] else '(Need to Update the Code)']
+                        'Code Version': ['.'.join([str(i) for i in code_version[1][:2]]), str(code_version[1][2]),
+                                         '(Up-To-Date)' if code_version[0] <= code_version[1] else '(Need to Update the Code)']
                         }
     for info, value in information_dict.items():
         if info == 'Code Version':
             if value[2] == '(Up-To-Date)':
                 print(f'{info}={Green_c}{value[0]} rev.{value[1]}{Default_c} {value[2]}')
+            else:
+                print(f'{info}={Red_c}{value[0]} rev.{value[1]}{Default_c} {value[2]}')
         else:
             print(f'{info}={Green_c}{" ".join(str(i) for i in value)}{Default_c}')
     modules_dict = {'colorama': ['Fore', 'Style', 'init'],

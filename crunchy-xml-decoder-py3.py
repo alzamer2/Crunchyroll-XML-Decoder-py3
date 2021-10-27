@@ -59,11 +59,20 @@ init()
 if not os.path.lexists(os.path.join('.','settings.ini')):
     altfuncs.config(defult=True)
 
-def idle_cmd_txt_fix(print_text):
-    if 'idlelib.run' in sys.modules:
-        print_text = re.sub('\\x1b.*?\[\d*\w','',print_text)
-    return print_text
+####### customs print
+org_print = print
+Green_c = '\x1b[32m'
+Red_c = '\x1b[31m'
+Default_c = '\x1b[0m'
 
+def print_idle_cmd_txt_fix(value='', *args, **kwargs):
+    if isinstance(value, str):
+        if 'idlelib.run' in sys.modules:
+            value = re.sub(r'\x1b.*?\[\d*(?:;\d*)?\w','',value)
+    org_print(value, *args, **kwargs)
+
+print = print_idle_cmd_txt_fix
+#################
 crunchyxmldecoder_print_coding = False
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#(Argument Parser)#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -92,8 +101,8 @@ def check_cookies():
         userstatus = getuserstatus()
     else:
         userstatus = getuserstatus()
-        print(idle_cmd_txt_fix('User Name = ' + '\x1b[32m' + userstatus[1] + '\x1b[0m'))
-        print(idle_cmd_txt_fix('Membership Type = ' + '\x1b[32m' +userstatus[0] + '\x1b[0m'))
+        print(f'User Name = {Green_c}{userstatus[1]}{Default_c}')
+        print(f'Membership Type = {Green_c}{userstatus[0]}{Default_c}')
 #'''
         
 def queueu(queuepath):
@@ -195,7 +204,7 @@ def multiitem_config_l2old(list_t=[],return_list_t=[],item__=None):
 load_config()
 Title = 'CrunchyRoll Downloader Toolkit'
 Subtitle = '''\
-If you don't have a \x1b[32mpremium\x1b[0m account,
+If you don't have a {Green_c}premium{Default_c} account,
 go and sign up for one now. It's well worth it, and supports the animators.'''
 vquality_sub = '''\
 set this to the preferred quality. possible values are: "240p" , "360p", "480p", "720p", "1080p", or "highest" for highest available.
@@ -204,17 +213,17 @@ lang1_sub='''Set this to the desired subtitle language.\
 If the subtitles aren\'t available in that language, it reverts to the Secondary language option'''
 lang2_sub='''If the Primary language isn't available, what language would you like as a backup?\
 Only if then they aren't found, then it goes to English as default'''
-quality_list_t = ['''\x1b[32m'''+'''android (240p)'''+'''\x1b[0m''','''\x1b[32m'''+'''360p'''+'''\x1b[0m''',
-                '''\x1b[32m'''+'''480p'''+'''\x1b[0m''','''\x1b[32m'''+'''720p'''+'''\x1b[0m''',
-                '''\x1b[32m'''+'''1080p'''+'''\x1b[0m''','''\x1b[32m'''+'''highest'''+'''\x1b[0m''']
 quality_list_ = ['240p', '360p', '480p', '720p', '1080p', 'highest']
-lang_list_t = ['''\x1b[32m'''+'''English'''+'''\x1b[0m''','''\x1b[32m'''+'''Español'''+'''\x1b[0m''',
-                '''\x1b[32m'''+'''Español (Espana)'''+'''\x1b[0m''','''\x1b[32m'''+'''Français'''+'''\x1b[0m''',
-               '''\x1b[32m'''+'''Português'''+'''\x1b[0m''','''\x1b[32m'''+'''Türkçe'''+'''\x1b[0m''',
-               '''\x1b[32m'''+'''Italiano'''+'''\x1b[0m''','''\x1b[32m'''+u'''Arabic'''+'''\x1b[0m''',
-               '''\x1b[32m'''+'''Deutsch'''+'''\x1b[0m''','''\x1b[32m'''+'''Русский'''+'''\x1b[0m''']
+quality_list_t = [f'{Green_c}{quality_v.replace("240p","android (240p)")}{Default_c}' for quality_v in quality_list_]
+
+#lang_list_t = ['''\x1b[32m'''+'''English'''+'''\x1b[0m''','''\x1b[32m'''+'''Español'''+'''\x1b[0m''',
+#                '''\x1b[32m'''+'''Español (Espana)'''+'''\x1b[0m''','''\x1b[32m'''+'''Français'''+'''\x1b[0m''',
+#               '''\x1b[32m'''+'''Português'''+'''\x1b[0m''','''\x1b[32m'''+'''Türkçe'''+'''\x1b[0m''',
+#               '''\x1b[32m'''+'''Italiano'''+'''\x1b[0m''','''\x1b[32m'''+u'''Arabic'''+'''\x1b[0m''',
+#               '''\x1b[32m'''+'''Deutsch'''+'''\x1b[0m''','''\x1b[32m'''+'''Русский'''+'''\x1b[0m''']
 lang_list_ = [ u'English', u'Español',u'Español (Espana)', u'Français (France)',u'Português (Brasil)',u'Türkçe',
                u'Italiano',u'العربية', u'Deutsch',u'Русский']
+lang_list_t = [f'{Green_c}{lang_v.replace(u"العربية",u"العربية (Arabic)")}{Default_c}' for lang_v in lang_list_]
 
 
 def multiitem_config_q_(list_t=[],return_list_t=[],item__=None):
@@ -248,19 +257,19 @@ def login_t(username=None,password=None):
         print_space = ' '
     if username is None or password is None:
         newline_print=4
-        menu_test.print_pc(idle_cmd_txt_fix(b'\x0d'.decode()+b'\033[A'.decode()+print_space*(menu_test.get_width_()-6)+b'\x0d'.decode()))
+        menu_test.print_pc(b'\x0d'.decode()+b'\033[A'.decode()+print_space*(menu_test.get_width_()-6)+b'\x0d'.decode())
         username = menu_test.input_pc(u'Username: ')
         menu_test.print_pc(b'\x0d'.decode()+b'\033[A'.decode()*2+'Password(don\'t worry the password are typing but hidden:',end='')
         password = getpass('')
-    menu_test.print_pc(idle_cmd_txt_fix(b'\x0d'.decode()+b'\033[A'.decode()+print_space*(menu_test.get_width_()-6))+b'\x0d'.decode(),end='')
+    menu_test.print_pc(b'\x0d'.decode()+b'\033[A'.decode()+print_space*(menu_test.get_width_()-6)+b'\x0d'.decode(),end='')
 
     #print('Login as ' + '\x1b[32m' + username + '\x1b[0m' + ' successfully.', password)
     userstatus = login(username, password)
     if username != '' and userstatus[0] == 'Guest':
-        menu_test.print_commit = '\x1b[31m' + 'Login failed.' + '\x1b[0m'
+        menu_test.print_commit = f'{Red_c}Login failed.{Default_c}'
     # sys.exit()
     else:
-        menu_test.print_commit = 'Login as ' + '\x1b[32m' + userstatus[1] + '\x1b[0m' + ' successfully.'
+        menu_test.print_commit = f'Login as {Green_c}{userstatus[1]}{Default_c}' + ' successfully.'
 
     #menu_test.print_commit = 'Login as ' + '\x1b[32m' + username + '\x1b[0m' + ' successfully.'
     if not 'idlelib.run' in sys.modules:
@@ -275,7 +284,7 @@ def autocatch_t():
 def debug_t():
     # sys.settrace(debug3.traceit)
     debug_.debug_start()
-    menu_test.print_msg = '\x1b[31m'+'Debug is on'+ '\x1b[0m'+'>'
+    menu_test.print_msg = f'{Red_c}Debug is on{Default_c}>'
 
 
 
@@ -293,7 +302,7 @@ menu_test.add_function('Main','Download an entire Anime(Autocatch links)',autoca
 menu_test.add_function('Main','Run Queue',queueu,[os.path.join('.','queue.txt')])
 menu_test.add_space('Main')
 if code_version[1] < code_version[0]:
-    menu_test.add_function('Main','\x1b[31m'+'update'+ '\x1b[0m',subprocess.call,[[sys.executable.replace('pythonw.exe', 'python.exe'),
+    menu_test.add_function('Main',f'{Red_c}update{Default_c}',subprocess.call,[[sys.executable.replace('pythonw.exe', 'python.exe'),
                                                                                    os.path.join(".", "crunchy-xml-decoder", "updater.py")]],
                            call_text_='111')
 else:
@@ -304,45 +313,45 @@ menu_test.add_function('Main','DEBUG',debug_t,call_text_='debug',reposition=True
 # menu_test.add_function('Main','DEBUG',debug_.debug_start,call_text_='debug',reposition=True,hidden=True)
 
 menu_test.add_function('setting',
-                        ['''Video Quality = \x1b[32m''',(menu_test.varible_pool_,'video_quality'),'''\x1b[0m'''],
+                        [f'Video Quality = {Green_c}',(menu_test.varible_pool_,'video_quality'),f'{Default_c}'],
                        multiitem_config_q_,[quality_list_t,quality_list_],reposition=True)
 menu_test.add_function('setting',
-                        ['''Primary Language = \x1b[32m''',(menu_test.varible_pool_,'language'),'''\x1b[0m'''],
+                        [f'Primary Language = {Green_c}',(menu_test.varible_pool_,'language'),f'{Default_c}'],
                        multiitem_config_l1,[lang_list_t,lang_list_],reposition=True)
 menu_test.add_function('setting',
-                        ['''Secondary Language = \x1b[32m''',(menu_test.varible_pool_,'language2'),'''\x1b[0m'''],
+                        [f'Secondary Language = {Green_c}',(menu_test.varible_pool_,'language2'),f'{Default_c}'],
                        multiitem_config_l2,[lang_list_t,lang_list_],reposition=True)
 menu_test.add_function('setting',
-                        ['''Hard Subtitle = ''',(menu_test.varible_pool_,'forcesubtitle'),''' #The Video will have 1 hard subtitle'''],
+                        ['Hard Subtitle = ',(menu_test.varible_pool_,'forcesubtitle'),''' #The Video will have 1 hard subtitle'''],
                        load_config,[],{'forcesubtitle':'toggle'},reposition=True)
 menu_test.add_function('setting',
-                        ['''USA Proxy = ''',(menu_test.varible_pool_,'forceusa'),''' #use a US session ID'''],
+                        ['USA Proxy = ',(menu_test.varible_pool_,'forceusa'),''' #use a US session ID'''],
                        load_config,[],{'forceusa':'toggle'},reposition=True)
 menu_test.add_function('setting',
-                        ['''Localize cookies = ''',(menu_test.varible_pool_,'localizecookies'),''' #Localize the cookies (Experiment)'''],
+                        ['Localize cookies = ',(menu_test.varible_pool_,'localizecookies'),''' #Localize the cookies (Experiment)'''],
                        load_config,[],{'localizecookies':'toggle'},reposition=True)
 menu_test.add_function('setting',
-                        ['''Only One Subtitle = ''',(menu_test.varible_pool_,'onlymainsub'),''' #Only download Primary Language'''],
+                        ['Only One Subtitle = ',(menu_test.varible_pool_,'onlymainsub'),''' #Only download Primary Language'''],
                        load_config,[],{'onlymainsub':'toggle'},reposition=True)
 menu_test.add_function('setting',
-                        ['''Dub Filter = ''',(menu_test.varible_pool_,'dubfilter'),''' #Ignor dub links when autocatch'''],
+                        ['Dub Filter = ',(menu_test.varible_pool_,'dubfilter'),''' #Ignor dub links when autocatch'''],
                        load_config,[],{'dubfilter':'toggle'},reposition=True)
 menu_test.add_function('setting',
-                        ['''Change the Number of The Download Connection = \x1b[32m''',(menu_test.varible_pool_,'connection_n_'),'''\x1b[0m'''],
+                        [f'Change the Number of The Download Connection = {Green_c}',(menu_test.varible_pool_,'connection_n_'),f'{Default_c}'],
                        load_config,[],{'connection_n_':[input,'Enter New Number of The Download Connection>>']},reposition=True)
 menu_test.add_function('setting',
-                        ['''use proxy(it disable if left blank)  = \x1b[32m''',(menu_test.varible_pool_,'proxy'),'''\x1b[0m  #ex:US'''],
+                        [f'use proxy(it disable if left blank)  = {Green_c}',(menu_test.varible_pool_,'proxy'),f'{Default_c}  #ex:US'],
                        load_config,[],{'proxy':[input,'Enter New proxy>>']},reposition=True)
 menu_test.add_function('setting',
-                        ['''Export Directory  = \x1b[32m''',(menu_test.varible_pool_,'download_dirctory'),'''\x1b[0m'''],
+                        [f'Export Directory  = {Green_c}',(menu_test.varible_pool_,'download_dirctory'),f'{Default_c}'],
                        load_config,[],{'download_dirctory':[input,'Enter New Export Directory>>']},reposition=True)
 
 menu_test.add_function('setting','Restore Default Settings',load_config,[],{'defult':True},reposition=True)
 
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#(argparse)#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#(argparse)#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
-parser = argparse.ArgumentParser(description=textwrap.dedent('''\
-If you don't have a \x1b[32mpremium\x1b[0m account,
+parser = argparse.ArgumentParser(description=textwrap.dedent(f'''\
+If you don't have a {Green_c}premium{Default_c} account,
 go and sign up for one now. It's well worth it, and supports the animators.'''),epilog='version: '+__version__)
 parser.add_argument("-d","--download", type=str, nargs = 1, metavar='URL', help="Download Crunchyroll Anime Link")
 parser.add_argument("-s","--subtitle", type=str, nargs = 1, metavar='URL', help="Download Crunchyroll Anime Subtitles only")
@@ -384,7 +393,7 @@ https://www.crunchyroll.com/military/episode-1-the-mission-begins-668503
         altfuncs.config(defult=True)
     elif arg.debug:
         debug_.debug_start()
-        menu_test.print_msg = '\x1b[31m' + 'Debug is on' + '\x1b[0m' + '>'
+        menu_test.print_msg = f'{Red_c}Debug is on{Default_c}>'
         menu_test.start_()
     elif arg.coding:
         coding_debug(arg.coding)
