@@ -30,11 +30,14 @@ from io import BytesIO
 
 ####### customs print
 org_print = print
+Green_c = '\x1b[32m'
+Red_c = '\x1b[31m'
+Default_c = '\x1b[0m'
 
 def print_idle_cmd_txt_fix(value='', *args, **kwargs):
     if isinstance(value, str):
         if 'idlelib.run' in sys.modules:
-            value = re.sub('\\x1b.*?\[\d*\w','',value)
+            value = re.sub(r'\x1b.*?\[\d*(?:;\d*)?\w','',value)
     org_print(value, *args, **kwargs)
 
 print = print_idle_cmd_txt_fix
@@ -464,8 +467,9 @@ def gethtml(url, req='', headers='', interpreter='nodejs', return_form='text'):
         #           'User-Agent': ''}
         browser_cookies = import_login_from_browser(import_from_browser)
         #for cookie_ in browser_cookies:
-        session.cookies['session_id'] = browser_cookies['session_id']
-    else:
+        if 'session_id' in browser_cookies:
+            session.cookies['session_id'] = browser_cookies['session_id']
+    if not 'session_id' in session.cookies:
         session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id')
         session.cookies['session_id'] = cookies_.get('COOKIES', 'sess_id')
     #print(session.cookies)
@@ -711,7 +715,7 @@ def vilos_subtitle(page_url_='', one_sub=None):
     if page_url_ == '':
         page_url_ = input('Please enter Crunchyroll video URL:\n')
     if not re.findall(r'(?:(?:https?://)?www\.)?crunchyroll\.com/(?:.+/.+-|media-)(\d*)', page_url_):
-        print("\x1b[31m" + "ERROR: Invalid URL." + "\x1b[0m")
+        print(f"{Red_c}ERROR: Invalid URL.{Default_c}")
         exit()
     html_page_ = gethtml(page_url_)
     htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})', html_page_)[0])
@@ -764,9 +768,9 @@ def vilos_subtitle(page_url_='', one_sub=None):
                                   '.ass'],
                                  ['True', 'True', 1, 'True', 'False', 'True'], 240)
         try:
-            print("Attempting to download " + '\x1b[32m' + lang_iso[i["language"]] + '\x1b[0m' + " subtitle...")
+            print(f'Attempting to download {Green_c}{lang_iso[i["language"]]}{Default_c} subtitle...')
         except:
-            print(unidecode("Attempting to download " + '\x1b[32m' + lang_iso[i["language"]] + '\x1b[0m' + " subtitle..."))
+            print(unidecode(f'Attempting to download {Green_c}{lang_iso[i["language"]]}{Default_c} subtitle...'))
         subtitle_ = requests.get(i["url"]).content
         open(sub_file_,'wb').write(subtitle_)
 

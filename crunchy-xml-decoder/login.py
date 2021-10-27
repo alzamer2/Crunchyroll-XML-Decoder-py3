@@ -110,14 +110,15 @@ def create_sess_id(usa_=False, auth = ''):
     sess_id_data = {'session_id': ''}
     ### First Method
     p_usa_session_post = requests.Request('GET', 'https://api.crunchyroll.com/start_session.0.json', params=payload).prepare()
-    google_p_params = {'container' : 'focus', 'url' : p_usa_session_post.url}
+    google_p_params = {'container' : 'none', 'url' : p_usa_session_post.url}
     retries = 5
     retries_o = retries+1
     while retries >=0:
       print('using g_proxy retry #{}'.format(retries_o-retries))
-      usa_session_post = session.post('https://images-focus-opensocial.googleusercontent.com/gadgets/proxy', params=google_p_params, headers=headers)
+      usa_session_post = session.post(f'https://images{random.randint(1, 99999)}-focus-opensocial.googleusercontent.com/gadgets/proxy', params=google_p_params, headers=headers)
       if usa_session_post.status_code == 200:
-        break
+        if usa_session_post.json()['data']['country_code'] == 'US':
+          break
       else:
         retries -= 1
         time.sleep(30)   #30 sec sleep to not over heat server

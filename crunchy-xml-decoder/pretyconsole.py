@@ -14,10 +14,22 @@ else:
     pass
 
 init()
-def idle_cmd_txt_fix(print_text):
-    if 'idlelib.run' in sys.modules:
-        print_text = re.sub('\\x1b.*?\[\d*\w','',print_text)
-    return print_text
+
+####### customs print
+org_print = print
+Green_c = '\x1b[32m'
+Red_c = '\x1b[31m'
+Default_c = '\x1b[0m'
+
+
+def print_idle_cmd_txt_fix(value='', *args, **kwargs):
+    if isinstance(value, str):
+        if 'idlelib.run' in sys.modules:
+            value = re.sub(r'\x1b.*?\[\d*(?:;\d*)?\w','',value)
+    org_print(value, *args, **kwargs)
+
+print = print_idle_cmd_txt_fix
+#################
 
 class pmenu():
     def __init__(self):
@@ -41,8 +53,8 @@ class pmenu():
         print(*arg,**kwargs)
 
     def test_function(self):
-        text_list = [tuple(('title','title')),tuple(('sub','''\
-If you don't have a \x1b[31mpremium\x1b[0m account,
+        text_list = [tuple(('title','title')),tuple(('sub',f'''\
+If you don't have a {Red_c}premium{Green_c} account,
 go and sign up for one now. It's well worth it, and supports the animators.''')),tuple(('lv2','item'))]
         text_list_ = self.createw_(self.parse_text(text_list))
         for line_ in text_list_:
@@ -51,10 +63,10 @@ go and sign up for one now. It's well worth it, and supports the animators.'''))
         pass
     
     def input_pc(self,prompt=''):
-        self.print_pc(idle_cmd_txt_fix(b'\x0d'.decode()+b'\033[A'.decode()+prompt),end='')
+        self.print_pc(b'\x0d'.decode()+b'\033[A'.decode()+prompt,end='')
         input_t = input('')
         if not 'idlelib.run' in sys.modules:
-            self.print_pc(idle_cmd_txt_fix(b'\x0d'.decode()+' '*(self.get_width_()-6)))
+            self.print_pc(b'\x0d'.decode()+' '*(self.get_width_()-6))
         self.print_counter -= 1
         return input_t
     
@@ -68,16 +80,16 @@ go and sign up for one now. It's well worth it, and supports the animators.'''))
                     if type(item_[0]) == types.FunctionType:
                         fun_value = str(item_[0](item_[1]))
                         if fun_value == str(True):
-                            fun_value = '\x1b[32m' + fun_value + '\x1b[0m'
+                            fun_value = f'{Green_c}{fun_value}{Default_c}'
                         elif fun_value == str(False):
-                            fun_value = '\x1b[31m' + fun_value + '\x1b[0m'
+                            fun_value = f'{Red_c}{fun_value}{Default_c}'
                         temp_texts_ += fun_value
                     elif type(item_[0]) == dict:
                         fun_value = str(item_[0][item_[1]])
                         if fun_value == str(True):
-                            fun_value = '\x1b[32m' + fun_value + '\x1b[0m'
+                            fun_value = f'{Green_c}{fun_value}{Default_c}'
                         elif fun_value == str(False):
-                            fun_value = '\x1b[31m' + fun_value + '\x1b[0m'
+                            fun_value = f'{Red_c}{fun_value}{Default_c}'
                         temp_texts_ += fun_value
                     else:
                         temp_texts_ += ''.join(item_)
@@ -85,15 +97,15 @@ go and sign up for one now. It's well worth it, and supports the animators.'''))
                 elif type(item_) == types.FunctionType:
                     fun_value = str(item_())
                     if fun_value == str(True):
-                        fun_value = '\x1b[32m' + fun_value + '\x1b[0m'
+                        fun_value = f'{Green_c}{fun_value}{Default_c}'
                     elif fun_value == str(False):
-                        fun_value = '\x1b[31m' + fun_value + '\x1b[0m'
+                        fun_value = f'{Red_c}{fun_value}{Default_c}'
                     temp_texts_ += fun_value
                 elif type(item_) == bool:
                     if item_:
-                        temp_texts_ += '\x1b[32m' + str(item_) + '\x1b[0m'
+                        temp_texts_ += f'{Green_c}{item_}{Default_c}'
                     else:
-                        temp_texts_ += '\x1b[31m' + str(item_) + '\x1b[0m'
+                        temp_texts_ += f'{Red_c}{item_}{Default_c}'
                 else:
                     temp_texts_ += str(item_)
             return temp_texts_
@@ -135,7 +147,7 @@ go and sign up for one now. It's well worth it, and supports the animators.'''))
                 console_space = ' '
             else:
                 console_space = ''
-            self.print_pc(idle_cmd_txt_fix(b'\x0d'.decode()+console_space*(self.get_width_()-6)+b'\x0d'.decode()+self.print_msg+self.print_commit+'>>'),end='')
+            self.print_pc(b'\x0d'.decode()+console_space*(self.get_width_()-6)+b'\x0d'.decode()+self.print_msg+self.print_commit+'>>',end='')
             self.print_commit = ''
             input_ = str(input())
             if input_ in self.menus_functions_[menu_name_].keys():
@@ -150,7 +162,7 @@ go and sign up for one now. It's well worth it, and supports the animators.'''))
                 if not output_ is None:
                     return output_
             else:
-                self.print_commit = '\x1b[31m' + 'Invalid Input!' + '\x1b[0m'
+                self.print_commit = f'{Red_c}Invalid Input!{Default_c}'
 
     def main_menu_(self, title_='', subtitle_='',exit_option_text='Exit', exit_option_call_text_='[EXIT]'):
         self.add_menu_('Main', title_, subtitle_, exit_option_text, exit_option_call_text_)
@@ -311,7 +323,7 @@ go and sign up for one now. It's well worth it, and supports the animators.'''))
         width_ = self.get_width_()
         text_to_clean_ = re.findall('\\x1b.*?\[(\d*\w)(.*)\\x1b.*?\[\d*\w',text_)
         for item_ in text_to_clean_:
-            text_= re.sub('\\x1b.*?\[\d*\w','',text_)
+            text_= re.sub(r'\x1b.*?\[\d*(?:;\d*)?\w','',text_)
         if text_ != '':
             ptext = textwrap.wrap(text_, width=width_-6,initial_indent=" "*2*lv,subsequent_indent=" "*(2*lv+4))
         else:
@@ -319,14 +331,14 @@ go and sign up for one now. It's well worth it, and supports the animators.'''))
         if not 'idlelib.run' in sys.modules:
             for i, item_ in enumerate(ptext):
                 for replacement_ in text_to_clean_:
-                    ptext[i] = item_.replace(replacement_[1],'\x1b['+replacement_[0]+replacement_[1]+'\x1b[0m')
+                    ptext[i] = item_.replace(replacement_[1],'\x1b['+replacement_[0]+replacement_[1]+f'{Default_c}')
                 
         return ptext
 
     def createw_(self, text_list_):
         width_ = self.get_width_()
         for i, line_ in enumerate(text_list_):
-            text_list_[i] = " "*self.indent_+self.frame_[0]+text_list_[i]+' '*(width_-len(re.sub('\\x1b.*?\[\d*\w','',line_))-6)+self.frame_[0]
+            text_list_[i] = " "*self.indent_+self.frame_[0]+text_list_[i]+' '*(width_-len(re.sub(r'\x1b.*?\[\d*(?:;\d*)?\w','',line_))-6)+self.frame_[0]
         text_list_.insert(0," "*self.indent_+self.frame_[2]+self.frame_[1]*(width_-6)+self.frame_[3])
         text_list_.insert(1," "*self.indent_+self.frame_[0]+' '*(width_-6)+self.frame_[0])
         text_list_ +=[" "*self.indent_+self.frame_[0]+' '*(width_-6)+self.frame_[0]]
@@ -379,10 +391,11 @@ if __name__ == '__main__':
         
 
         
+    
     load_config()
     Title = 'CrunchyRoll Downloader Toolkit'
-    Subtitle = '''\
-If you don't have a \x1b[32mpremium\x1b[0m account,
+    Subtitle = f'''\
+If you don't have a {Green_c}premium{Default_c} account,
 go and sign up for one now. It's well worth it, and supports the animators.'''
     vquality_sub = '''\
 set this to the preferred quality. possible values are: "240p" , "360p", "480p", "720p", "1080p", or "highest" for highest available.
@@ -391,17 +404,11 @@ note that any quality higher than 360p still requires premium, unless it's avail
 If the subtitles aren\'t available in that language, it reverts to the Secondary language option'''
     lang2_sub='''If the Primary language isn't available, what language would you like as a backup?\
 Only if then they aren't found, then it goes to English as default'''
-    quality_list_t = ['''\x1b[32m'''+'''android (240p)'''+'''\x1b[0m''','''\x1b[32m'''+'''360p'''+'''\x1b[0m''',
-                    '''\x1b[32m'''+'''480p'''+'''\x1b[0m''','''\x1b[32m'''+'''720p'''+'''\x1b[0m''',
-                    '''\x1b[32m'''+'''1080p'''+'''\x1b[0m''','''\x1b[32m'''+'''highest'''+'''\x1b[0m''']
     quality_list_ = ['240p', '360p', '480p', '720p', '1080p', 'highest']
-    lang_list_t = ['''\x1b[32m'''+'''English'''+'''\x1b[0m''','''\x1b[32m'''+'''Espanol'''+'''\x1b[0m''',
-                   '''\x1b[32m'''+'''Espanol (Espana)'''+'''\x1b[0m''','''\x1b[32m'''+'''Francais'''+'''\x1b[0m''',
-                   '''\x1b[32m'''+'''Portugues'''+'''\x1b[0m''','''\x1b[32m'''+'''Turkce'''+'''\x1b[0m''',
-                   '''\x1b[32m'''+'''Italiano'''+'''\x1b[0m''','''\x1b[32m'''+'''Arabic'''+'''\x1b[0m''',
-                   '''\x1b[32m'''+'''Deutsch'''+'''\x1b[0m''','''\x1b[32m'''+'''Russian'''+'''\x1b[0m''']
+    quality_list_t = [f'{Green_c}{quality_v.replace("240p","android (240p)")}{Default_c}' for quality_v in quality_list_]
     lang_list_ = ['English','Espanol','Espanol_Espana','Francais','Portugues','Turkce','Italiano','Arabic','Deutsch','Russian']
-
+    lang_list_t = [f'{Green_c}{lang_v.replace("Espanol_Espana","Espanol (Espana)")}{Default_c}' for lang_v in lang_list_]
+    
     def multiitem_config_q_(list_t=[],return_list_t=[],item__=None):
         item__ = menu_test.run_menu('vquality')
         if not item__ is None:
@@ -441,18 +448,18 @@ Only if then they aren't found, then it goes to English as default'''
     menu_test.add_function('Main','Download an entire Anime(Autocatch links)',print,['lol2'])
     menu_test.add_function('Main','Run Queue',print,['lol2'])
     menu_test.add_space('Main')
-    menu_test.add_function('Main','\x1b[31m'+'update'+ '\x1b[0m',print,['lol2'],call_text_='111')
+    menu_test.add_function('Main',f'{Red_c}update{Default_c}',print,['lol2'],call_text_='111')
     menu_test.add_function('Main','Settings',menu_test.run_menu,['setting'],call_text_='999',reposition=True)
     menu_test.add_function('Main','DEBUG',print,['hi'],call_text_='debug',reposition=False,hidden=True)
 
     menu_test.add_function('setting',
-                           ['''Video Quality = \x1b[32m''',(menu_test.varible_pool_,'video_quality'),'''\x1b[0m'''],
+                           [f'Video Quality = {Green_c}',(menu_test.varible_pool_,'video_quality'),f'{Default_c}'],
                            multiitem_config_q_,[quality_list_t,quality_list_],reposition=True)
     menu_test.add_function('setting',
-                           ['''Primary Language = \x1b[32m''',(menu_test.varible_pool_,'language'),'''\x1b[0m'''],
+                           [f'Primary Language = {Green_c}',(menu_test.varible_pool_,'language'),f'{Default_c}'],
                            multiitem_config_l1,[lang_list_t,lang_list_],reposition=True)
     menu_test.add_function('setting',
-                           ['''Primary Language = \x1b[32m''',(menu_test.varible_pool_,'language2'),'''\x1b[0m'''],
+                           [f'Primary Language = {Green_c}',(menu_test.varible_pool_,'language2'),f'{Default_c}'],
                            multiitem_config_l2,[lang_list_t,lang_list_],reposition=True)
     menu_test.add_function('setting',
                            ['''Hard Subtitle = ''',(menu_test.varible_pool_,'forcesubtitle'),''' #The Video will have 1 hard subtitle'''],
@@ -470,10 +477,10 @@ Only if then they aren't found, then it goes to English as default'''
                            ['''Dub Filter = ''',(menu_test.varible_pool_,'dubfilter'),''' #Ignor dub links when autocatch'''],
                            load_config,[],{'dubfilter':'toggle'},reposition=True)
     menu_test.add_function('setting',
-                           ['''Change the Number of The Download Connection = \x1b[32m''',(menu_test.varible_pool_,'connection_n_'),'''\x1b[0m'''],
+                           [f'Change the Number of The Download Connection = {Green_c}',(menu_test.varible_pool_,'connection_n_'),f'{Default_c}'],
                            load_config,[],{'connection_n_':[input,'Enter New Number of The Download Connection>>']},reposition=True)
     menu_test.add_function('setting',
-                           ['''use proxy(it disable if left blank)  = \x1b[32m''',(menu_test.varible_pool_,'proxy'),'''\x1b[0m  #ex:US'''],
+                           [f'use proxy(it disable if left blank)  = {Green_c}',(menu_test.varible_pool_,'proxy'),f'{Default_c}  #ex:US'],
                            load_config,[],{'proxy':[input,'Enter New proxy>>']},reposition=True)
     
     menu_test.add_function('setting','Restore Default Settings',load_config,[],{'defult':True},reposition=True)
@@ -482,5 +489,6 @@ Only if then they aren't found, then it goes to English as default'''
 
     
     menu_test.start_()
+    #menu_test.print_pc(Subtitle)
 
 
