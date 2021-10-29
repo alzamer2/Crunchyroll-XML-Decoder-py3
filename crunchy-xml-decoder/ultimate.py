@@ -87,9 +87,9 @@ class ultimate():
         self.htmlconfig['metadata']['series_title'] = json.loads(re.findall(r'vilos\.config\.analytics = ({.*})',html_page_)[0])['media_reporting_parent']['title']
 
         for i in self.htmlconfig['streams']:
-            if i['format'] == 'adaptive_hls':
+            if i['format'] == 'adaptive_hls' or i['format'] == 'trailer_hls':
                 self.stream_url_hls.update({i['hardsub_lang']:i['url']})
-            elif i['format'] == 'adaptive_dash':
+            elif i['format'] == 'adaptive_dash' or i['format'] == 'trailer_dash':
                 self.stream_url_dash.update({i['hardsub_lang']:i['url']})
 
         if self.htmlconfig['metadata']['episode_number'] != '':
@@ -131,8 +131,10 @@ class ultimate():
 
         download_method = [(self.hls_download, 'HLS stream'), (self.dash_download_, 'DASH stream'), (self.youtube_dl_, 'External Library YoutubeDL')]
 
+        #print(self.stream_url_hls)
+
         for download_method_run in download_method:
-            #download_method_run[0]()
+            download_method_run[0]()
             try:
                 print(f'Now Downloading - {self.title} [{download_method_run[1]}]\n')
                 download_method_run[0]()
