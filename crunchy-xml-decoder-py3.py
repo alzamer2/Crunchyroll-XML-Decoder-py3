@@ -203,7 +203,7 @@ def multiitem_config_l2old(list_t=[],return_list_t=[],item__=None):
 
 load_config()
 Title = 'CrunchyRoll Downloader Toolkit'
-Subtitle = '''\
+Subtitle = f'''\
 If you don't have a {Green_c}premium{Default_c} account,
 go and sign up for one now. It's well worth it, and supports the animators.'''
 vquality_sub = '''\
