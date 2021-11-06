@@ -24,18 +24,31 @@ import textwrap
 
 sys.path.append('crunchy-xml-decoder')
 
-from login import login, getuserstatus
-#from altfuncs import config, autocatch,vilos_subtitle
-from ultimate import ultimate, mkv_merge
-from pretyconsole import pmenu
-import altfuncs
-import debug3
+code_version = [('0', '0', '0'), ('0', '0', '0')]
+
+def check_external_test():
+    from external_test import testing_external_moudules_
+
+    testing_external_moudules_(code_version)
+
+
+for i in range(0,2):
+    try:
+        from login import login, getuserstatus
+        #from altfuncs import config, autocatch,vilos_subtitle
+        from ultimate import ultimate, mkv_merge
+        from pretyconsole import pmenu
+        import altfuncs
+        import debug3
+        break
+    except ModuleNotFoundError:
+        check_external_test()
 
 try:
     from updater import get_lastest_version
     code_version = get_lastest_version()
 except:
-    code_version = [('0', '0', '0'), ('0', '0', '0')]
+    pass
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#(updating-version)#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
 __version__ = '%s.%s.%s' % get_lastest_version()[1]
 #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#(CHECKING)#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#
@@ -81,10 +94,7 @@ crunchyxmldecoder_print_coding = False
 # def empty_function():
 #     pass
 
-def check_external_test():
-    from external_test import testing_external_moudules_
 
-    testing_external_moudules_(code_version)
 
 
 
