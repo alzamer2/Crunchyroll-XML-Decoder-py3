@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import sys
+import sys,os
 import requests
 from getpass import getpass
 from configparser import ConfigParser
@@ -17,8 +17,8 @@ from cryptography.fernet import Fernet
 #from http.cookiejar import Cookie
 
 import subprocess
-
-
+#print(os.path.abspath('.'))
+sys.path.append(os.path.abspath('.'))
 try:
   import html2text
   h = html2text.HTML2Text()
@@ -113,12 +113,17 @@ def create_sess_id(usa_=False, auth = ''):
     google_p_params = {'container' : 'none', 'url' : p_usa_session_post.url}
     retries = 5
     retries_o = retries+1
-    while retries >=0:
+    while retries >0:
       print('using g_proxy retry #{}'.format(retries_o-retries))
       usa_session_post = session.post(f'https://images{random.randint(1, 99999)}-focus-opensocial.googleusercontent.com/gadgets/proxy', params=google_p_params, headers=headers)
+      #print(usa_session_post.text)
       if usa_session_post.status_code == 200:
         if usa_session_post.json()['data']['country_code'] == 'US':
           break
+        else:
+          device_id = ''.join(random.sample(string.ascii_letters + string.digits, 32))
+          retries -= 1
+          time.sleep(30)   #30 sec sleep to not over heat server
       else:
         retries -= 1
         time.sleep(30)   #30 sec sleep to not over heat server
@@ -131,13 +136,17 @@ def create_sess_id(usa_=False, auth = ''):
       except:
         print(usa_session_post.content)
     
-    if sess_id_data['session_id'] == '': ### Second Method
-      for prxy_ in get_proxy(['HTTPS'],['US']):
+    if sess_id_data['session_id'] == '' or sess_id_data['country_code'] != 'US': ### Second Method
+      proxy_list = get_proxy(['HTTPS'],['US'])
+      for i, prxy_ in enumerate(proxy_list):
+        print(f'using Secure Proxy #{i+1}/{len(proxy_list)}')
+        #print(prxy_)
         proxies = {'https': prxy_}
         try:
           usa_session_post = session.post('https://api.crunchyroll.com/start_session.0.json', proxies=proxies,
-          params=payload).json()
-          sess_id_data = usa_session_post['data']
+          params=payload)
+          #print(usa_session_post)
+          sess_id_data = usa_session_post.json()['data']
         except:
           pass
 

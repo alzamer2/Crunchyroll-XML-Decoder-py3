@@ -15,6 +15,7 @@ import os
 
 from requests.adapters import BaseAdapter
 from requests.compat import urlparse, unquote
+from requests.auth import HTTPBasicAuth
 from requests import Response, codes
 import errno
 import os
@@ -446,6 +447,13 @@ def import_login_from_browser(browser = ''):
       #cookies[cookie_item.name]=cookie_item.value
   return cookies
 
+def update_headers(r,*arg,**kwarg):
+    #print(r.status_code, r.url ,r.request.headers['Host'])
+    if r.status_code == 307:
+        if 'beta.crunchyroll.com' in r.url:
+            r.request.headers['Host'] = 'beta.crunchyroll.com'
+            r.request.headers['Referer']: 'https://beta.crunchyroll.com/'
+    
 def gethtml(url, req='', headers='', interpreter='nodejs', return_form='text'):
     if interpreter == 'nodejs':
         try:
@@ -457,7 +465,7 @@ def gethtml(url, req='', headers='', interpreter='nodejs', return_form='text'):
     session.mount('file://', LocalFileAdapter())
     cookies_ = ConfigParser()
     cookies_.read('cookies')
-    import_from_browser = 'chrome'
+    import_from_browser = False
     if import_from_browser:
         #if import_from_browser == 'chrome':
         #    headers = {'Referer': 'http://crunchyroll.com/', 'Host': 'www.crunchyroll.com',
@@ -468,7 +476,8 @@ def gethtml(url, req='', headers='', interpreter='nodejs', return_form='text'):
         browser_cookies = import_login_from_browser(import_from_browser)
         #for cookie_ in browser_cookies:
         if 'session_id' in browser_cookies:
-            session.cookies['session_id'] = browser_cookies['session_id']
+            #session.cookies['session_id'] = browser_cookies['session_id']
+            session.cookies.update(browser_cookies)
     if not 'session_id' in session.cookies:
         session.cookies['sess_id'] = cookies_.get('COOKIES', 'sess_id')
         session.cookies['session_id'] = cookies_.get('COOKIES', 'sess_id')
@@ -490,7 +499,25 @@ def gethtml(url, req='', headers='', interpreter='nodejs', return_form='text'):
     if headers == '':
         headers = {'Referer': 'http://crunchyroll.com/', 'Host': 'www.crunchyroll.com',
                    'User-Agent': 'Mozilla/5.0  Windows NT 6.1; rv:26.0 Gecko/20100101 Firefox/26.0'}
-    res = session.get(url, params=req, headers=headers)
+    #headers_beta = dict(headers)
+    #if 'Host' in headers_beta:
+    #    headers_beta['Host'] = headers_beta['Host'].replace('www.crunchyroll.com','beta.crunchyroll.com')
+    try:
+        #print('https://www.crunchyroll.com/beta-opt-out-survey?beta_optout=1', session.cookies)
+        #session.get('https://www.crunchyroll.com/beta-opt-out-survey?beta_optout=1', headers=headers)
+        #print(url, session.cookies)
+        #res = session.get(url, params=req, headers=headers, allow_redirects=False)
+        res = session.get(url, params=req, headers=headers, hooks={'response':update_headers})
+        
+    except requests.exceptions.TooManyRedirects:
+        print("""Too many redirects.""")
+        res = session.get(url, params=req, headers=headers, allow_redirects=False)
+        print(res.status_code)
+        open('Too many redirects.html','wb').write(res.content)
+        raise requests.exceptions.TooManyRedirects
+    res.cookies.update(session.cookies)
+    #print(session.cookies)
+    #print(res.cookies)
     res.encoding = 'UTF-8'
     #open('html.html','wb').write(res.content)
     if return_form == 'respond':
@@ -535,7 +562,8 @@ class autocatch():
     def __init__(self,url=None):
         if url is None:
             url = input(u'indicate the url :> ')
-        url ='{}{}{}'.format(*list(re.findall(r'((?:https?://)?(?:www\.)?crunchyroll\.com/)(?:[\w-]{2,5}/)?(.+?)(?=/|$)',url)[0])+['?skip_wall=1'])
+        #url ='{}{}{}'.format(*list(re.findall(r'((?:https?://)?(?:www\.)?crunchyroll\.com/)(?:[\w-]{2,5}/)?(.+?)(?=/|$)',url)[0])+['?skip_wall=1'])
+        url ='{}{}{}'.format(*list(re.findall(r'((?:https?://)?(?:www\.)?crunchyroll\.com/)(?:[\w-]{2,5}/)?(series/.+?|.+?)(?=/|$)',url)[0])+['?skip_wall=1'])
         html = self.gethtml(url)
         #html_tree = etree.fromstring(html, etree.HTMLParser())
 
@@ -605,7 +633,8 @@ class autocatch():
                 if index_chose[index_]:
                     pre_item = '\033[30;42m'
                     suf_item = '\033[m'
-                print_line =f'{index_+1} - {pre_item}{item_[0]}{suf_item}'
+                #print(item_)
+                print_line =f'{index_+1} - {pre_item}{item_[0]} ({len(item_[1])} files){suf_item}'
                 if 'idlelib.run' in sys.modules:
                     print_line = re.sub(r'\x1b.*?\[\d*(?:;\d*)?\w','**',print_line)
                 print(print_line)
@@ -704,6 +733,77 @@ def dircheck(text_=[], text_condition_=[], max_len=255, max_retries=''):
             break
     return output_data_
 
+def conver_beta_streams_to_classic(beta_dict):
+    beta_streams={'streams':[],'subtitles':[],'preview':''}
+    for format_k, format_v in beta_dict['streams'].items():
+        for hardsub_lang_k, hardsub_lang_v in format_v.items():
+            beta_streams['streams'] +=[{'format': format_k,
+					'audio_lang': beta_dict['audio_locale'].replace('-',''),
+					'hardsub_lang': hardsub_lang_k.replace('-','') if hardsub_lang_k != '' else None,
+					'url': hardsub_lang_v['url'],
+					'resolution': 'adaptive',
+					'vcodec': hardsub_lang_v['vcodec']}]
+    for language_k, language_v in beta_dict['subtitles'].items():
+        beta_streams['subtitles'] +=[{'language': language_k.replace('-',''),
+				    'url': language_v['url'],
+				    'format': language_v['format']
+				    }]
+    return beta_streams
+
+class BearerAuth(requests.auth.AuthBase):
+    def __init__(self, token):
+        self.token = token
+    def __call__(self, r):
+        r.headers["authorization"] = "Bearer " + self.token
+        return r
+
+def extract_streams(html_page_resp):
+    media_dict =dict()
+    beta_initialstate = dict()
+    html_page_ = html_page_resp.text
+    beta_initial_sttat_ = False
+    if re.search(r'window.__INITIAL_STATE__ = ({.*})', html_page_):
+        beta_initialstate = json.loads(re.findall(r'window.__INITIAL_STATE__ = ({.*})',html_page_)[0])
+        if 'watch' in beta_initialstate:
+            if beta_initialstate['watch']['id']:
+                if beta_initialstate['watch']['id'] in beta_initialstate['content']['byId']:
+                    beta_initial_sttat_ = True
+            
+    if re.search(r'vilos\.config\.media = ({.*})', html_page_):
+        media_dict = json.loads(re.findall(r'vilos\.config\.media = ({.*})',html_page_)[0])
+        media_dict['metadata']['series_title'] = json.loads(re.findall(r'vilos\.config\.analytics = ({.*})',html_page_)[0])['media_reporting_parent']['title']
+    elif beta_initial_sttat_:
+        media_dict['metadata']=beta_initialstate['content']['byId'][beta_initialstate['watch']['id']]['episode_metadata']
+        media_dict['metadata']['title'] = beta_initialstate['content']['byId'][beta_initialstate['watch']['id']]['title']
+        asset_object = requests.get(beta_initialstate['content']['byId'][beta_initialstate['watch']['id']]['playback']).json()
+        media_dict.update(conver_beta_streams_to_classic(asset_object))
+        
+    elif re.search(r'window.__APP_CONFIG__ = ({.*})', html_page_):
+        headers = {'Referer': 'https://beta.crunchyroll.com/', 'Host': 'beta-api.crunchyroll.com',
+                   'User-Agent': 'Mozilla/5.0  Windows NT 6.1; rv:26.0 Gecko/20100101 Firefox/26.0'}
+        beta_appconfig = json.loads(re.findall(r'window.__APP_CONFIG__ = ({.*})',html_page_)[0])
+        eps_id = re.findall(r'(?:http.?://www\.|beta\.)?crunchyroll\.com/(?:.{0,2}/)?watch/(.+?)(?:/|$)',html_page_resp.url)[0]
+        auth_tokens = requests.post('https://beta-api.crunchyroll.com/auth/v1/token', cookies=html_page_resp.cookies, headers=headers, data={'grant_type':'etp_rt_cookie'}, auth=HTTPBasicAuth(beta_appconfig['cxApiParams']['accountAuthClientId'], '')).json()
+        #print(auth_tokens) #need to fix us
+        params_data = requests.get('https://beta-api.crunchyroll.com/index/v2', headers=headers, auth=BearerAuth(auth_tokens["access_token"])).json()
+        beta_objects = requests.get(f'https://beta-api.crunchyroll.com/cms/v2{params_data["cms"]["bucket"]}/objects/{eps_id}',
+                                   params={'Signature': params_data["cms"]['signature'], 'Policy': params_data["cms"]['policy'], 'Key-Pair-Id': params_data["cms"]['key_pair_id']}).json()
+        
+        #print(beta_objects)
+        media_dict['metadata']=beta_objects['items'][0]['episode_metadata']
+        media_dict['metadata']['title'] = beta_objects['items'][0]['title']
+        asset_object = requests.get(beta_objects['items'][0]['playback']).json()
+        media_dict.update(conver_beta_streams_to_classic(asset_object))
+        
+        
+        #pass
+    else:
+        raise Exception('No Media Data was found')
+    media_dict['metadata']['episode_number'] = str(media_dict['metadata']['episode_number'])
+
+    return media_dict
+
+
 def vilos_subtitle(page_url_='', one_sub=None):
     print('''
 ------------------------------
@@ -714,13 +814,15 @@ def vilos_subtitle(page_url_='', one_sub=None):
         os.makedirs(config_['download_dirctory'])
     if page_url_ == '':
         page_url_ = input('Please enter Crunchyroll video URL:\n')
-    if not re.findall(r'(?:(?:https?://)?www\.)?crunchyroll\.com/(?:.+/.+-|media-)(\d*)', page_url_):
+    if not re.findall(r'(?:http.?://)?(?:www\.|beta\.)?crunchyroll\.com/(?:.{0,2}/)?(?:(?:.+/.+-|media-)\d+|watch/.+?(?:/|$))', page_url_):
         print(f"{Red_c}ERROR: Invalid URL.{Default_c}")
         exit()
-    html_page_ = gethtml(page_url_)
-    htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})', html_page_)[0])
-    htmlconfig['metadata']['series_title'] = \
-    json.loads(re.findall(r'vilos\.config\.analytics = ({.*})', html_page_)[0])['media_reporting_parent']['title']
+    #html_page_ = gethtml(page_url_)
+    #htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})', html_page_)[0])
+    #htmlconfig['metadata']['series_title'] = \
+    #json.loads(re.findall(r'vilos\.config\.analytics = ({.*})', html_page_)[0])['media_reporting_parent']['title']
+    html_page_resp = gethtml(page_url_, return_form = 'respond')
+    htmlconfig = extract_streams(html_page_resp)
     lang_iso = {'enUS' : 'English (US)', 'esLA' : u'Espa\xf1ol', 'esES' : u'Espa\xf1ol (Espa\xf1a)',
                 'frFR' : u'Fran\xe7ais (France)', 'ptBR' : u'Portugu\xeas (Brasil)', 'itIT' : 'Italiano',
                 'deDE' : 'Deutsch','arME' :  'العربية', 'ruRU' : 'Русский','enGB' : 'English (UK)', 'trTR':'uTürkçe'}

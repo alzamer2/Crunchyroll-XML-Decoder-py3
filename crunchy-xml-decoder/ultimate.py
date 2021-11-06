@@ -12,7 +12,7 @@ import re
 import subprocess
 import sys
 
-from altfuncs import config, clean_text, dircheck, gethtml, vilos_subtitle
+from altfuncs import config, clean_text, dircheck, gethtml,extract_streams, vilos_subtitle
 from unidecode import unidecode
 from hls_ import video_hls
 from Dash import dash_download
@@ -81,16 +81,24 @@ class ultimate():
         and (b"jschl_vc" in html_page_resp.content or b"jschl_answer" in html_page_resp.content or b"/cdn-cgi/l/chk_captcha" in html_page_resp.content)):
             raise Cloudflare('Attention Required! | Cloudflare')
 
-        html_page_ = html_page_resp.text
+        #html_page_ = html_page_resp.text
 
-        self.htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})',html_page_)[0])
-        self.htmlconfig['metadata']['series_title'] = json.loads(re.findall(r'vilos\.config\.analytics = ({.*})',html_page_)[0])['media_reporting_parent']['title']
+        #self.htmlconfig = json.loads(re.findall(r'vilos\.config\.media = ({.*})',html_page_)[0])
+        #self.htmlconfig['metadata']['series_title'] = json.loads(re.findall(r'vilos\.config\.analytics = ({.*})',html_page_)[0])['media_reporting_parent']['title']
+        self.htmlconfig = extract_streams(html_page_resp)
 
         for i in self.htmlconfig['streams']:
-            if i['format'] == 'adaptive_hls' or i['format'] == 'trailer_hls':
+            if i['format'] == 'adaptive_hls':
                 self.stream_url_hls.update({i['hardsub_lang']:i['url']})
-            elif i['format'] == 'adaptive_dash' or i['format'] == 'trailer_dash':
+            elif i['format'] == 'adaptive_dash':
                 self.stream_url_dash.update({i['hardsub_lang']:i['url']})
+        for i in self.htmlconfig['streams']:
+            if i['format'] == 'trailer_hls':
+                if not i['hardsub_lang'] in self.stream_url_hls:
+                    self.stream_url_hls.update({i['hardsub_lang']:i['url']})
+            elif i['format'] == 'trailer_dash':
+                if not i['hardsub_lang'] in self.stream_url_dash:
+                    self.stream_url_dash.update({i['hardsub_lang']:i['url']})
 
         if self.htmlconfig['metadata']['episode_number'] != '':
             self.title = '{s_title} Episode {ep} - {ep_title}'.format(s_title=self.htmlconfig['metadata']['series_title'],
@@ -134,7 +142,7 @@ class ultimate():
         #print(self.stream_url_hls)
 
         for download_method_run in download_method:
-            download_method_run[0]()
+            #download_method_run[0]()
             try:
                 print(f'Now Downloading - {self.title} [{download_method_run[1]}]\n')
                 download_method_run[0]()
@@ -295,18 +303,23 @@ with youtube_dl.YoutubeDL(
                 else:
                     self.sess_id_ = cookies_.get('COOKIES', 'sess_id')
 
-        check_page_url = re.match(r'https?://www.crunchyroll.com/.+?/.+?-(\d+?)$',self.page_url)
+        check_page_url_clasic = re.match(r'(?:http.?://)?(?:www\.|beta\.)?crunchyroll\.com/(?:.{0,2}/)?.+?/.+?-(\d+?)$',self.page_url)
+        check_page_url_beta = re.match(r'(?:http.?://)?(?:www\.|beta\.)?crunchyroll\.com/(?:.{0,2}/)?watch/(.+?)(?:/|$)',self.page_url)
 
-        if check_page_url:
+        if check_page_url_clasic:
             #this is episode
-            self.media_id = check_page_url[1]
+            self.media_id = check_page_url_clasic[1]
             self.page_url = f'http://www.crunchyroll.com/media-{self.media_id}'
             self.download_episode()
-
+        elif check_page_url_beta:
+            self.media_id = check_page_url_beta[1]
+            self.page_url = f'https://beta.crunchyroll.com/watch/{self.media_id}'
+            self.download_episode()
         else:
             #this is series
             pass
         #print(self.page_url)
+        
 
         vilos_subtitle(self.page_url)
         mkv_merge(self.video_output, self.config_dict['video_quality'], 'English')
